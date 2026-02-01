@@ -1,0 +1,13 @@
+{
+  "metadata": {
+    "name": "invalid-no-version"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "idle" }
+    ],
+    "transitions": [],
+    "initial": "idle"
+  }
+}

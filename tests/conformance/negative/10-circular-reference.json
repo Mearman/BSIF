@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "circular-hierarchy"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      {
+        "name": "state1",
+        "parent": "state2"
+      },
+      {
+        "name": "state2",
+        "parent": "state1"
+      }
+    ],
+    "transitions": [],
+    "initial": "state1"
+  }
+}

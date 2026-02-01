@@ -1,0 +1,59 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "hybrid-specification",
+    "version": "1.0.0",
+    "description": "Combines state machine and temporal properties"
+  },
+  "semantics": {
+    "type": "hybrid",
+    "components": [
+      {
+        "type": "state-machine",
+        "states": [
+          { "name": "locked" },
+          { "name": "unlocked" }
+        ],
+        "transitions": [
+          {
+            "from": "locked",
+            "to": "unlocked",
+            "event": "unlock"
+          }
+        ],
+        "initial": "locked"
+      },
+      {
+        "type": "temporal",
+        "logic": "ltl",
+        "variables": {
+          "locked": "boolean"
+        },
+        "properties": [
+          {
+            "name": "eventually_unlocks",
+            "formula": {
+              "operator": "implies",
+              "operands": [
+                {
+                  "operator": "variable",
+                  "variable": "locked"
+                },
+                {
+                  "operator": "finally",
+                  "operand": {
+                    "operator": "not",
+                    "operand": {
+                      "operator": "variable",
+                      "variable": "locked"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

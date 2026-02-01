@@ -1,0 +1,10 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "invalid-type"
+  },
+  "semantics": {
+    "type": "invalid-type",
+    "states": []
+  }
+}

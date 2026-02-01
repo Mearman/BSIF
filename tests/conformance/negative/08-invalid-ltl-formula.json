@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "invalid-ltl"
+  },
+  "semantics": {
+    "type": "temporal",
+    "logic": "ltl",
+    "variables": {
+      "x": "boolean"
+    },
+    "properties": [
+      {
+        "name": "invalid-property",
+        "formula": {
+          "operator": "invalid-operator",
+          "operand": {
+            "operator": "variable",
+            "variable": "x"
+          }
+        }
+      }
+    ]
+  }
+}

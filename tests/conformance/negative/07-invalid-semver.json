@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "bsif_version": "not-a-version",
+    "name": "invalid-version"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "idle" }
+    ],
+    "transitions": [],
+    "initial": "idle"
+  }
+}

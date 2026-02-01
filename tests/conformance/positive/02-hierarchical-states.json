@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "hierarchical-state-machine",
+    "version": "1.0.0",
+    "description": "State machine with hierarchical (nested) states"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      {
+        "name": "on",
+        "entry": "powerOn()"
+      },
+      {
+        "name": "heating",
+        "parent": "on",
+        "entry": "startHeating()"
+      },
+      {
+        "name": "cooling",
+        "parent": "on",
+        "entry": "startCooling()"
+      }
+    ],
+    "transitions": [
+      {
+        "from": "heating",
+        "to": "cooling",
+        "event": "temperature_reached",
+        "guard": "currentTemp >= targetTemp"
+      },
+      {
+        "from": "cooling",
+        "to": "heating",
+        "event": "temperature_dropped",
+        "guard": "currentTemp <= targetTemp"
+      }
+    ],
+    "initial": "heating"
+  }
+}

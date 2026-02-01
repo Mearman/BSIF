@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "invalid-constraint"
+  },
+  "semantics": {
+    "type": "constraints",
+    "target": {
+      "class": "Example"
+    },
+    "preconditions": [
+      {
+        "description": "Missing expression field"
+      }
+    ],
+    "postconditions": []
+  }
+}

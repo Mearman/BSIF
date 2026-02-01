@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "event-handlers",
+    "version": "1.0.0"
+  },
+  "semantics": {
+    "type": "events",
+    "events": {
+      "UserLogin": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "userId": "string",
+            "timestamp": "integer"
+          }
+        }
+      }
+    },
+    "handlers": [
+      {
+        "event": "UserLogin",
+        "action": "logAuditEntry(event)"
+      }
+    ]
+  }
+}

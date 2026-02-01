@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "counter-with-tests",
+    "version": "1.0.0"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "zero" },
+      { "name": "positive" }
+    ],
+    "transitions": [
+      {
+        "from": "zero",
+        "to": "positive",
+        "event": "increment",
+        "action": "count = count + 1"
+      }
+    ],
+    "initial": "zero"
+  },
+  "tests": [
+    {
+      "name": "increment-from-zero",
+      "description": "Incrementing from zero transitions to positive",
+      "input": {
+        "currentState": "zero",
+        "event": "increment",
+        "count": 0
+      },
+      "expected": {
+        "currentState": "positive",
+        "count": 1
+      }
+    }
+  ],
+  "documentation": {
+    "overview": "Simple counter state machine for testing"
+  }
+}

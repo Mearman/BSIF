@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "client-server-protocol",
+    "version": "1.0.0"
+  },
+  "semantics": {
+    "type": "interaction",
+    "participants": [
+      { "name": "client", "role": "requester" },
+      { "name": "server", "role": "responder" }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "server",
+        "message": "GET /api/resource"
+      },
+      {
+        "from": "server",
+        "to": "client",
+        "message": "200 OK",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "data": "string"
+          }
+        }
+      }
+    ]
+  }
+}

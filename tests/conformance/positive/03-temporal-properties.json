@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "ltl-properties",
+    "version": "1.0.0",
+    "description": "LTL temporal properties for mutual exclusion"
+  },
+  "semantics": {
+    "type": "temporal",
+    "logic": "ltl",
+    "variables": {
+      "in_critical_1": "boolean",
+      "in_critical_2": "boolean"
+    },
+    "properties": [
+      {
+        "name": "mutual_exclusion",
+        "formula": {
+          "operator": "globally",
+          "operand": {
+            "operator": "not",
+            "operand": {
+              "operator": "and",
+              "operands": [
+                { "operator": "variable", "variable": "in_critical_1" },
+                { "operator": "variable", "variable": "in_critical_2" }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

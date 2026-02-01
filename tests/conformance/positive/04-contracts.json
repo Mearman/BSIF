@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "stack-contracts",
+    "version": "1.0.0"
+  },
+  "semantics": {
+    "type": "constraints",
+    "target": {
+      "class": "Stack"
+    },
+    "invariants": [
+      {
+        "description": "Size is non-negative",
+        "expression": "size >= 0"
+      }
+    ],
+    "preconditions": [],
+    "postconditions": []
+  }
+}

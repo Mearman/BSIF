@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "complete-metadata-example",
+    "version": "1.2.3",
+    "description": "Example with all optional metadata fields",
+    "author": "Example Author",
+    "license": "MIT",
+    "references": [
+      "https://example.com/requirement-1",
+      "https://example.com/requirement-2"
+    ]
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "initial" }
+    ],
+    "transitions": [],
+    "initial": "initial"
+  }
+}

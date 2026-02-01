@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "spec-with-tool-mappings",
+    "version": "1.0.0"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "idle" }
+    ],
+    "transitions": [],
+    "initial": "idle"
+  },
+  "tools": {
+    "tlaplus": {
+      "module": "---------------- MODULE Spec ----------------\nEXTENDS Naturals\nVARIABLE state\nInit == state = \"idle\"\nNext == state = \"idle\"\n====="
+    },
+    "scxml": {
+      "xml": "<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\"><state id=\"idle\"/></scxml>"
+    }
+  }
+}
