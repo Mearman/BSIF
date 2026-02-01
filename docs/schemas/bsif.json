@@ -1,0 +1,558 @@
+{
+  "$schema": "https://json-schema.org/draft/2024-12/schema",
+  "$id": "https://bsif-spec.io/schemas/bsif.json",
+  "title": "BSIF Behavioral Specification",
+  "description": "Behavioral Specification Interchange Format (BSIF) schema for defining language-agnostic program behavior specifications",
+  "type": "object",
+  "required": ["metadata", "semantics"],
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "semantics": {
+      "$ref": "#/$defs/semantics"
+    },
+    "tools": {
+      "$ref": "#/$defs/tools"
+    },
+    "tests": {
+      "$ref": "#/$defs/tests"
+    },
+    "documentation": {
+      "$ref": "#/$defs/documentation"
+    }
+  },
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "description": "Metadata section for BSIF document identification and versioning",
+      "required": ["bsif_version", "name"],
+      "properties": {
+        "bsif_version": {
+          "type": "string",
+          "description": "BSIF format version (SemVer 2.0.0 compatible)",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Specification name (unique identifier)",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "version": {
+          "type": "string",
+          "description": "Specification version (SemVer 2.0.0 compatible)",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description",
+          "maxLength": 4096
+        },
+        "author": {
+          "type": "string",
+          "description": "Author or organization",
+          "maxLength": 512
+        },
+        "license": {
+          "type": "string",
+          "description": "SPDX license identifier",
+          "maxLength": 64
+        },
+        "references": {
+          "type": "array",
+          "description": "Related specifications or URIs",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "maxItems": 100
+        }
+      }
+    },
+    "semantics": {
+      "description": "Semantics section - one of the behavioral specification types",
+      "oneOf": [
+        { "$ref": "#/$defs/stateMachine" },
+        { "$ref": "#/$defs/temporal" },
+        { "$ref": "#/$defs/constraints" },
+        { "$ref": "#/$defs/events" },
+        { "$ref": "#/$defs/interaction" },
+        { "$ref": "#/$defs/hybrid" }
+      ]
+    },
+    "stateMachine": {
+      "type": "object",
+      "required": ["type", "states", "transitions", "initial"],
+      "properties": {
+        "type": {
+          "const": "state-machine"
+        },
+        "states": {
+          "type": "array",
+          "description": "Array of state definitions",
+          "items": { "$ref": "#/$defs/state" },
+          "minItems": 1
+        },
+        "transitions": {
+          "type": "array",
+          "description": "Array of transition definitions",
+          "items": { "$ref": "#/$defs/transition" },
+          "minItems": 0
+        },
+        "initial": {
+          "type": "string",
+          "description": "ID of initial state",
+          "minLength": 1
+        },
+        "final": {
+          "type": "array",
+          "description": "IDs of final/accepting states",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique state identifier",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "entry": {
+          "type": "string",
+          "description": "Action on state entry (tool-specific expression)",
+          "maxLength": 4096
+        },
+        "exit": {
+          "type": "string",
+          "description": "Action on state exit (tool-specific expression)",
+          "maxLength": 4096
+        },
+        "parent": {
+          "type": "string",
+          "description": "Parent state for hierarchical states",
+          "minLength": 1
+        },
+        "parallel": {
+          "type": "boolean",
+          "description": "Enable parallel regions"
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "required": ["from", "to"],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Source state ID",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "description": "Destination state ID",
+          "minLength": 1
+        },
+        "event": {
+          "type": "string",
+          "description": "Trigger event",
+          "minLength": 1
+        },
+        "guard": {
+          "type": "string",
+          "description": "Boolean condition (tool-specific expression)",
+          "maxLength": 4096
+        },
+        "action": {
+          "type": "string",
+          "description": "Transition action (tool-specific expression)",
+          "maxLength": 4096
+        }
+      }
+    },
+    "temporal": {
+      "type": "object",
+      "required": ["type", "logic", "variables", "properties"],
+      "properties": {
+        "type": {
+          "const": "temporal"
+        },
+        "logic": {
+          "type": "string",
+          "enum": ["ltl", "ctl"],
+          "description": "Type of temporal logic"
+        },
+        "variables": {
+          "type": "object",
+          "description": "Variable declarations",
+          "additionalProperties": {
+            "oneOf": [
+              { "const": "boolean" },
+              { "const": "integer" },
+              { "const": "string" },
+              { "$ref": "#/$defs/objectType" }
+            ]
+          }
+        },
+        "properties": {
+          "type": "array",
+          "description": "Temporal properties",
+          "items": { "$ref": "#/$defs/property" },
+          "minItems": 1
+        }
+      }
+    },
+    "objectType": {
+      "type": "object",
+      "required": ["type", "properties"],
+      "properties": {
+        "type": {
+          "const": "object"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              { "const": "boolean" },
+              { "const": "integer" },
+              { "const": "string" },
+              { "type": "string" }
+            ]
+          }
+        }
+      }
+    },
+    "property": {
+      "type": "object",
+      "required": ["name", "formula"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Property name",
+          "minLength": 1
+        },
+        "formula": { "$ref": "#/$defs/ltlFormula" }
+      }
+    },
+    "ltlFormula": {
+      "oneOf": [
+        { "$ref": "#/$defs/unaryFormula" },
+        { "$ref": "#/$defs/binaryFormula" },
+        { "$ref": "#/$defs/variableRef" },
+        { "$ref": "#/$defs/literalValue" }
+      ]
+    },
+    "unaryFormula": {
+      "type": "object",
+      "required": ["operator", "operand"],
+      "properties": {
+        "operator": {
+          "type": "string",
+          "enum": ["not", "globally", "finally", "next", "always", "eventually"]
+        },
+        "operand": { "$ref": "#/$defs/ltlFormula" }
+      }
+    },
+    "binaryFormula": {
+      "type": "object",
+      "required": ["operator", "operands"],
+      "properties": {
+        "operator": {
+          "type": "string",
+          "enum": ["and", "or", "implies", "until"]
+        },
+        "operands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ltlFormula" },
+          "minItems": 2
+        }
+      }
+    },
+    "variableRef": {
+      "type": "object",
+      "required": ["operator", "variable"],
+      "properties": {
+        "operator": {
+          "const": "variable"
+        },
+        "variable": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "literalValue": {
+      "type": "object",
+      "required": ["operator", "value"],
+      "properties": {
+        "operator": {
+          "const": "literal"
+        },
+        "value": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "type": "integer" },
+            { "type": "string" }
+          ]
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": ["type", "target", "preconditions", "postconditions"],
+      "properties": {
+        "type": {
+          "const": "constraints"
+        },
+        "target": {
+          "type": "object",
+          "description": "Target function/method reference",
+          "minProperties": 1,
+          "properties": {
+            "function": { "type": "string", "minLength": 1 },
+            "method": { "type": "string", "minLength": 1 },
+            "class": { "type": "string", "minLength": 1 },
+            "module": { "type": "string", "minLength": 1 }
+          }
+        },
+        "preconditions": {
+          "type": "array",
+          "description": "Preconditions",
+          "items": { "$ref": "#/$defs/constraint" },
+          "minItems": 0
+        },
+        "postconditions": {
+          "type": "array",
+          "description": "Postconditions",
+          "items": { "$ref": "#/$defs/constraint" },
+          "minItems": 0
+        },
+        "invariants": {
+          "type": "array",
+          "description": "Invariants",
+          "items": { "$ref": "#/$defs/constraint" },
+          "minItems": 0
+        }
+      }
+    },
+    "constraint": {
+      "type": "object",
+      "required": ["description", "expression"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Human-readable description",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "expression": {
+          "type": "string",
+          "description": "Constraint expression (tool-specific)",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      }
+    },
+    "events": {
+      "type": "object",
+      "required": ["type", "events", "handlers"],
+      "properties": {
+        "type": {
+          "const": "events"
+        },
+        "events": {
+          "type": "object",
+          "description": "Event declarations",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "payload": { "$ref": "#/$defs/typeDefinition" },
+              "attributes": { "type": "object" }
+            }
+          }
+        },
+        "handlers": {
+          "type": "array",
+          "description": "Event handlers",
+          "items": { "$ref": "#/$defs/handler" },
+          "minItems": 0
+        }
+      }
+    },
+    "typeDefinition": {
+      "oneOf": [
+        { "const": "boolean" },
+        { "const": "integer" },
+        { "const": "string" },
+        { "$ref": "#/$defs/objectType" }
+      ]
+    },
+    "handler": {
+      "type": "object",
+      "required": ["event"],
+      "properties": {
+        "event": {
+          "type": "string",
+          "description": "Event identifier",
+          "minLength": 1
+        },
+        "filter": {
+          "type": "string",
+          "description": "Filter expression (tool-specific)",
+          "maxLength": 4096
+        },
+        "action": {
+          "type": "string",
+          "description": "Action expression (tool-specific)",
+          "maxLength": 4096
+        },
+        "propagates": {
+          "type": "boolean",
+          "description": "Whether event propagates"
+        }
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "required": ["type", "participants", "messages"],
+      "properties": {
+        "type": {
+          "const": "interaction"
+        },
+        "participants": {
+          "type": "array",
+          "description": "System participants",
+          "items": { "$ref": "#/$defs/participant" },
+          "minItems": 1
+        },
+        "messages": {
+          "type": "array",
+          "description": "Message sequences",
+          "items": { "$ref": "#/$defs/messageSequence" },
+          "minItems": 0
+        }
+      }
+    },
+    "participant": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Participant identifier",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "description": "Participant role",
+          "maxLength": 256
+        }
+      }
+    },
+    "messageSequence": {
+      "type": "object",
+      "required": ["from", "to", "message"],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Source participant",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "description": "Destination participant",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "description": "Message type/name",
+          "minLength": 1
+        },
+        "payload": { "$ref": "#/$defs/typeDefinition" },
+        "guard": {
+          "type": "string",
+          "description": "Guard condition (tool-specific)",
+          "maxLength": 4096
+        }
+      }
+    },
+    "hybrid": {
+      "type": "object",
+      "required": ["type", "components"],
+      "properties": {
+        "type": {
+          "const": "hybrid"
+        },
+        "components": {
+          "type": "array",
+          "description": "Array of semantic specifications",
+          "items": { "$ref": "#/$defs/semantics" },
+          "minItems": 2
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "description": "Tool-specific mappings (optional)",
+      "additionalProperties": true,
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "tests": {
+      "type": "array",
+      "description": "Test cases (optional)",
+      "items": { "$ref": "#/$defs/testCase" }
+    },
+    "testCase": {
+      "type": "object",
+      "required": ["name", "description", "input", "expected"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Test case name",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "Test description",
+          "minLength": 1
+        },
+        "input": {
+          "type": "object",
+          "description": "Input stimulus"
+        },
+        "expected": {
+          "type": "object",
+          "description": "Expected outcome"
+        }
+      }
+    },
+    "documentation": {
+      "type": "object",
+      "description": "Documentation section (optional)",
+      "properties": {
+        "overview": {
+          "type": "string",
+          "description": "Long-form description",
+          "maxLength": 65536
+        },
+        "examples": {
+          "type": "array",
+          "description": "Usage examples",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
