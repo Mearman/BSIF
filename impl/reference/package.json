@@ -19,8 +19,8 @@
     "ci": "npm run lint && npm run test:types && npm run test",
     "lint": "eslint --cache . && tsc --noEmit",
     "lint:fix": "eslint . --fix",
-    "test": "tsx --test test/*.test.ts test/commands/*.test.ts",
-    "test:coverage": "c8 tsx --test test/*.test.ts test/commands/*.test.ts",
+    "test": "tsx --test test/**/*.unit.test.ts test/**/*.integration.test.ts",
+    "test:coverage": "c8 tsx --test test/**/*.unit.test.ts test/**/*.integration.test.ts",
     "test:types": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
