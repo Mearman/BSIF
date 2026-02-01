@@ -373,119 +373,118 @@ Define a specification for "Program X performs action Y" such that:
 
 ---
 
-## 4. Missing Tooling
+## 4. Tooling Analysis
 
 ### 4.1 Specification Authoring Tools
 
-**Gap:** No modern, accessible tooling for authoring formal specifications.
+**Current State:**
+- **Eclipse-based IDEs**: TLA+ Toolbox, Overture VDM IDE, Eclipse OCL
+- **VS Code extensions**: TLA+, Alloy, VDM (limited functionality)
+- **Text editors**: Syntax highlighting for most spec languages
 
-**What Exists:**
-- Eclipse-based IDEs (TLA+ Toolbox, Overture)
-- VS Code extensions (limited functionality)
-- Text editors with syntax highlighting
+**Gap Analysis:**
 
-**What's Missing:**
-
-| Tool Type | Description | Status |
-|-----------|-------------|--------|
-| **Visual Editor** | Drag-and-drop specification builder | ✗ |
-| **Natural Language to Spec** | AI-powered requirement translation | Research |
-| **Template Library** | Reusable specification patterns | ✗ |
-| **Live Collaboration** | Multi-user spec editing | ✗ |
-| **Diff/Merge** | Specification version control tools | ✗ |
-| **Documentation Generator** | Spec to readable docs | Limited |
-| **Linter** | Specification quality checker | ✗ |
-| **Auto-completion** | Intelligent specification completion | ✗ |
+| Tool Type | Status | Reality |
+|-----------|--------|---------|
+| **Visual Editor** | ✗ Completely Missing | No drag-and-drop spec builders exist |
+| **Natural Language to Spec** | △ Research | NL2ACSL (ACSL), exploratory LLM work |
+| **Template Library** | △ Fragmented | Scattered examples, no centralized repo |
+| **Live Collaboration** | ✗ Completely Missing | No real-time multi-user editing |
+| **Diff/Merge** | △ Partial | Git works for text, no spec-aware merging |
+| **Documentation Generator** | △ Fragmented | Tool-specific only, no universal format |
+| **Linter** | ✗ Completely Missing | No spec quality checking tools |
+| **Auto-completion** | △ Limited | Basic VS Code extensions, no intelligent completion |
 
 ---
 
 ### 4.2 Test Generation Tools
-
-**Gap:** Automated test generation from specifications is limited or non-existent.
 
 **Current State:**
 
 | Specification Type | Test Generation | Quality |
 |--------------------|-----------------|---------|
 | TLA+ | Counterexamples only | High (for violations) |
-| Alloy | Instances only | Medium |
+| Alloy | Instance generation | Medium |
 | QuickCheck | Random generation | High (probabilistic) |
+| Hypothesis | Random generation + shrinking | High (probabilistic) |
 | Z | ✗ | N/A |
 | B Method | ✗ | N/A |
-| OpenAPI | AI-powered (emerging) | Medium |
+| OpenAPI | AI-powered (emerging 2024) | Medium |
 | Pact | Example-based | Low |
+| JML/SPARK | ✗ (verification only) | N/A |
 
-**What's Missing:**
+**Gap Analysis:**
 
-| Tool Type | Description | Status |
-|-----------|-------------|--------|
-| **Coverage Analysis** | How thoroughly tests cover spec | ✗ |
-| **Boundary Detection** | Find edge cases from spec | ✗ |
-| **Property Miner** | Extract properties from code | Research |
-| **Test Minimization** | Smallest test suite for spec | ✗ |
-| **Regression Test Selection** | Tests affected by spec change | ✗ |
+| Tool Type | Status | Reality |
+|-----------|--------|---------|
+| **Coverage Analysis** | ✗ Completely Missing | No tools measure spec coverage |
+| **Boundary Detection** | ✗ Completely Missing | No automated edge case finding |
+| **Property Miner** | △ Research | Academic research on mining invariants |
+| **Test Minimization** | ✗ Completely Missing | No spec-aware test suite optimization |
+| **Regression Test Selection** | ✗ Completely Missing | No tools link spec changes to test selection |
+| **Formal Spec → Tests** | △ Fragmented | QuickCheck works, but Z/B/VDM have no test generation |
 
 ---
 
 ### 4.3 Verification Tools
 
-**Gap:** Verification tools are either too specialized or too complex for mainstream use.
+**Current State:**
+- **Model checkers**: TLC (TLA+), Alloy Analyzer, ProB (B Method)
+- **Theorem provers**: Isabelle, Coq, HOL (used with Z, B, VDM)
+- **Verifiers**: OpenJML, Frama-C (ACSL), GNATprove (SPARK), Dafny, F*
 
 **Current Barriers:**
 
 | Barrier | Example | Impact |
 |---------|---------|--------|
 | **Learning Curve** | TLA+ requires 2-3 months | Limited adoption |
-| **Tool Complexity** | F* requires OCaml, complex build | Friction |
-| **Performance** | Model checking doesn't scale | Limited applicability |
+| **Tool Complexity** | F* requires OCaml, complex build | High friction |
+| **Performance** | State space explosion | Limited scalability |
 | **False Positives** | Tools report non-issues | User frustration |
 | **Limited IDE Support** | Many tools CLI-only | Poor UX |
 
-**What's Missing:**
+**Gap Analysis:**
 
-| Tool Type | Description | Status |
-|-----------|-------------|--------|
-| **Cloud Verification** | Scalable verification service | Experimental |
-| **Incremental Verification** | Verify only changed parts | Research |
-| **Parallel Verification** | Distribute verification | Limited |
-| **Interactive Guidance** | Help users fix proof failures | ✗ |
-| **Visualization** | Visualize specifications/counterexamples | Limited |
+| Tool Type | Status | Reality |
+|-----------|--------|---------|
+| **Cloud Verification** | △ Experimental | APALACHE has cloud deployment, not mainstream |
+| **Incremental Verification** | △ Research | Academic research only, not production |
+| **Parallel Verification** | △ Limited | TLC has some parallelism, not well-developed |
+| **Interactive Guidance** | ✗ Completely Missing | No tools help fix proof failures interactively |
+| **Visualization** | △ Fragmented | Alloy has visualization, others don't |
+| **Proof Obligation Simplification** | △ Limited | Dafny/F* automate some proofs, but many require manual work |
 
 ---
 
 ### 4.4 CI/CD Integration Tools
 
-**Gap:** Specifications are not integrated into modern software development workflows.
-
 **Current State:**
 
 | Framework | CI/CD Support | Quality |
 |-----------|---------------|---------|
-| QuickCheck | ✓ | Excellent |
-| Hypothesis | ✓ | Excellent |
-| Pact | ✓ | Excellent |
-| Dafny | △ | Good |
-| TLA+ | △ | Manual setup |
-| Alloy | △ | Manual setup |
-| Z | ✗ | None |
-| B Method | ✗ | None |
+| QuickCheck | ✓ | Excellent (standard test runners) |
+| Hypothesis | ✓ | Excellent (pytest integration) |
+| Pact | ✓ | Excellent (broker-based) |
+| Dafny | △ | Good (CLI-based, needs setup) |
+| TLA+ | △ | Manual setup required |
+| Alloy | △ | Manual setup required |
+| JML/SPARK | △ | Manual build integration |
+| Z/B/VDM | ✗ | No CI/CD integration |
 
-**What's Missing:**
+**Gap Analysis:**
 
-| Tool Type | Description | Status |
-|-----------|-------------|--------|
-| **GitHub Actions** | Pre-built spec verification workflows | ✗ |
-| **Pre-commit Hooks** | Spec linting before commit | ✗ |
-| **Spec Drift Detection** | Alert when code diverges from spec | ✗ |
-| **Coverage Tracking** | Track specification coverage over time | ✗ |
-| **Regression Prevention** | Block commits that violate specs | ✗ |
-| **Documentation Sync** | Auto-update docs from specs | ✗ |
+| Tool Type | Status | Reality |
+|-----------|--------|---------|
+| **Pre-built GitHub Actions** | ✗ Completely Missing | No ready-to-use workflows for formal specs |
+| **Pre-commit Hooks** | ✗ Completely Missing | No spec linting before commit |
+| **Spec Drift Detection** | ✗ Completely Missing | No tools monitor code vs spec divergence |
+| **Coverage Tracking** | ✗ Completely Missing | No measurement of spec coverage over time |
+| **Regression Prevention** | △ Limited | Runtime assertions exist (JML/SPARK), but not CI-blocking |
+| **Documentation Sync** | ✗ Completely Missing | No auto-update of docs from specs |
 
 ---
 
 ### 4.5 Specification Repository and Distribution
-
-**Gap:** No equivalent of npm, PyPI, or crates.io for specifications.
 
 **What Would It Provide:**
 - Shared specification libraries
@@ -500,50 +499,91 @@ Define a specification for "Program X performs action Y" such that:
 - No dependency management
 - Manual integration
 
-**What's Needed:**
+**Gap Analysis:**
 
-| Component | Description | Status |
-|-----------|-------------|--------|
-| **Package Registry** | Central spec repository | ✗ |
-| **Semantic Versioning** | Spec version compatibility | ✗ |
-| **Dependency Resolution** | Handle spec dependencies | ✗ |
-| **License Compatibility** | Check license compatibility | ✗ |
-| **Security Scanning** | Detect malicious specs | ✗ |
+| Component | Status | Reality |
+|-----------|--------|---------|
+| **Package Registry** | ✗ Completely Missing | No npm/cargo/pip equivalent for specs |
+| **Semantic Versioning** | ✗ Completely Missing | No version compatibility standards for specs |
+| **Dependency Resolution** | ✗ Completely Missing | No way to manage spec dependencies |
+| **License Compatibility** | ✗ Completely Missing | No tools check license compatibility |
+| **Security Scanning** | ✗ Completely Missing | No equivalent of npm audit for specs |
+| **Sharing Mechanisms** | △ Fragmented | GitHub/GitLab exist, but no spec-specific infrastructure |
 
 ---
 
 ### 4.6 Specification Analysis Tools
 
-**Gap:** No tools for analyzing specification quality and characteristics.
+**Gap Analysis:**
 
-**What's Missing:**
-
-| Tool Type | Description | Use Case |
-|-----------|-------------|----------|
-| **Complexity Analyzer** | Measure spec complexity | Maintainability |
-| **Dead Code Detector** | Find unused spec elements | Cleanup |
-| **Abstraction Detector** | Find over-specified details | Refactoring |
-| **Invariant Miner** | Suggest invariants from code | Spec generation |
-| **Equivalence Checker** | Are two specs equivalent? | Refactoring |
-| **Simpifier** | Reduce spec to essential parts | Maintainability |
+| Tool Type | Status | Reality |
+|-----------|--------|---------|
+| **Complexity Analyzer** | ✗ Completely Missing | No tools measure spec complexity |
+| **Dead Code Detector** | ✗ Completely Missing | No tools find unused spec elements |
+| **Abstraction Detector** | ✗ Completely Missing | No tools identify over-specification |
+| **Invariant Miner** | △ Research | Academic research on mining invariants from code |
+| **Equivalence Checker** | ✗ Completely Missing | No tools check if two specs are equivalent |
+| **Simplifier** | ✗ Completely Missing | No tools reduce specs to essentials |
+| **Consistency Checker** | △ Fragmented | Some tools have internal consistency, no standalone checkers |
 
 ---
 
 ### 4.7 Documentation and Learning Tools
 
-**Gap:** Formal methods suffer from poor documentation and learning resources.
+**Current State:**
+- **Tool-specific docs**: Each framework has its own documentation
+- **Academic papers**: Research scattered across publications
+- **Tutorials**: Some interactive tutorials for specific tools
 
-**What's Missing:**
+**Gap Analysis:**
 
-| Resource Type | Description | Status |
-|---------------|-------------|--------|
-| **Interactive Tutorials** | Learn by doing | ✗ (limited) |
-| **Video Courses** | Structured video learning | ✗ (limited) |
-| **Example Library** | Specs for common patterns | Scattered |
-| **Anti-Patterns** | Common mistakes to avoid | ✗ |
-| **Decision Trees** | Which tool for which problem? | ✗ |
-| **Translation Guides** | Map concepts between tools | ✗ |
-| **Glossary** | Unified terminology | ✗ |
+| Resource Type | Status | Reality |
+|---------------|--------|---------|
+| **Interactive Tutorials** | △ Limited | Tool-specific only, no unified platform |
+| **Video Courses** | △ Limited | Few formal methods video courses |
+| **Example Library** | △ Fragmented | Examples scattered across repos |
+| **Anti-Patterns Catalog** | ✗ Completely Missing | No centralized mistake documentation |
+| **Decision Trees** | ✗ Completely Missing | No "which tool for which problem" guides |
+| **Translation Guides** | ✗ Completely Missing | No mapping of concepts between tools |
+| **Unified Glossary** | ✗ Completely Missing | No standardized terminology |
+| **Learning Paths** | ✗ Completely Missing | No structured curricula |
+
+---
+
+### 4.8 Tooling Summary
+
+**Completely Missing (True Gaps):**
+
+| Category | Count | Examples |
+|----------|-------|----------|
+| **Authoring** | 5 | Visual editor, live collaboration, linter, intelligent auto-completion |
+| **Test Generation** | 4 | Coverage analysis, boundary detection, test minimization, regression selection |
+| **Verification** | 2 | Interactive guidance, proof simplification |
+| **CI/CD** | 5 | Pre-built workflows, drift detection, coverage tracking, documentation sync |
+| **Repository** | 6 | Package registry, semantic versioning, dependency resolution, security scanning |
+| **Analysis** | 5 | Complexity analyzer, dead code detector, abstraction detector, equivalence checker, simplifier |
+| **Documentation** | 4 | Anti-patterns catalog, decision trees, translation guides, unified glossary |
+
+**Partially Exists (Research/Experimental):**
+
+| Category | Count | Examples |
+|----------|-------|----------|
+| **Authoring** | 2 | NL→Spec translation (NL2ACSL), template libraries (scattered) |
+| **Test Generation** | 1 | Property mining (academic research) |
+| **Verification** | 3 | Cloud verification (APALACHE), incremental/parallel verification (research) |
+| **Analysis** | 1 | Invariant mining (academic) |
+
+**Fragmented (Exists but Not Standardized):**
+
+| Category | Count | Examples |
+|----------|-------|----------|
+| **Authoring** | 3 | IDE support (varied quality), documentation generators, diff/merge (Git) |
+| **Test Generation** | 1 | Formal spec→tests (QuickCheck works, Z/B/VDM don't) |
+| **Verification** | 1 | Visualization (Alloy has, others don't) |
+| **CI/CD** | 1 | Regression prevention (runtime assertions exist, not CI-blocking) |
+| **Documentation** | 3 | Interactive tutorials, video courses, example library (all tool-specific) |
+
+**Key Insight:** ~31 completely missing tools, ~6 in research, ~9 fragmented. The primary gap is **standardization and integration**, not complete absence of functionality.
 
 ---
 
@@ -800,17 +840,36 @@ Academic Paper → Research Prototype → Production Tool → Industry Adoption
 - Cloud-based verification services
 - Industry adoption driven by quantified ROI
 
-**The gap is not technical impossibility, but rather:**
-- Fragmentation and lack of standards
-- Poor tooling and developer experience
-- Lack of quantified benefits
-- High learning curve and skill requirements
+**The gap is NOT technical impossibility, but rather:**
+
+| Issue | Reality | Severity |
+|-------|---------|----------|
+| **Fragmentation** | Tools exist but don't work together | High |
+| **No Standards** | No interchange format or package registry | High |
+| **Poor Integration** | Limited CI/CD, no drift detection | Medium |
+| **Accessibility** | Steep learning curve, poor UX | High |
+| **Quantified Benefits** | No ROI data, limited case studies | Medium |
+
+**What EXISTS (more than initially apparent):**
+- Mature tools for specific domains (TLA+, Pact, QuickCheck, SCXML)
+- IDE support for major frameworks (Eclipse, VS Code)
+- CI/CD integration for some tools (PBT, Pact, Dafny)
+- Test generation for property-based testing
+- Runtime verification (design by contract languages)
+
+**What's TRULY Missing:**
+- Universal behavioral specification language
+- Standard interchange format (like SMT-LIB for behavioral specs)
+- Package repository for specifications
+- Spec-aware tooling (drift detection, coverage tracking)
+- Integration between different tool ecosystems
 
 **Closing these gaps requires:**
-- Investment in tooling and standards
+- Standardization efforts (interchange format, repository)
+- Tool integration (translation, chaining)
+- Better developer experience (simplified workflows)
 - Research on benefits and ROI
 - Education and training
-- Industry-academia collaboration
 
 ---
 
