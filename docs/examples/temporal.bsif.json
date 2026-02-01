@@ -1,0 +1,97 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "mutex-property",
+    "version": "1.0.0",
+    "description": "Mutual exclusion property for two concurrent processes",
+    "author": "Distributed Systems Team",
+    "license": "Apache-2.0"
+  },
+  "semantics": {
+    "type": "temporal",
+    "logic": "ltl",
+    "variables": {
+      "in_critical_1": "boolean",
+      "in_critical_2": "boolean",
+      "requesting_1": "boolean",
+      "requesting_2": "boolean"
+    },
+    "properties": [
+      {
+        "name": "mutual_exclusion",
+        "description": "Both processes can never be in critical section simultaneously",
+        "formula": {
+          "operator": "globally",
+          "operand": {
+            "operator": "not",
+            "operand": {
+              "operator": "and",
+              "operands": [
+                {
+                  "operator": "variable",
+                  "variable": "in_critical_1"
+                },
+                {
+                  "operator": "variable",
+                  "variable": "in_critical_2"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "eventual_entry",
+        "description": "Any process requesting entry eventually enters critical section",
+        "formula": {
+          "operator": "globally",
+          "operand": {
+            "operator": "implies",
+            "operands": [
+              {
+                "operator": "variable",
+                "variable": "requesting_1"
+              },
+              {
+                "operator": "finally",
+                "operand": {
+                  "operator": "variable",
+                  "variable": "in_critical_1"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "no_starvation",
+        "description": "Each process gets infinite turns in critical section",
+        "formula": {
+          "operator": "globally",
+          "operand": {
+            "operator": "finally",
+            "operand": {
+              "operator": "and",
+              "operands": [
+                {
+                  "operator": "variable",
+                  "variable": "in_critical_1"
+                },
+                {
+                  "operator": "finally",
+                  "operand": {
+                    "operator": "variable",
+                    "variable": "in_critical_2"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "documentation": {
+    "overview": "This specification defines temporal properties for a mutual exclusion algorithm ensuring two processes never access a critical section simultaneously, while guaranteeing fairness (no starvation)."
+  }
+}

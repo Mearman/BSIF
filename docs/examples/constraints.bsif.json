@@ -1,0 +1,114 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "stack-contracts",
+    "version": "1.0.0",
+    "description": "Design-by-contract specification for a stack data structure",
+    "author": "Data Structures Library",
+    "license": "MIT"
+  },
+  "semantics": {
+    "type": "constraints",
+    "target": {
+      "class": "Stack",
+      "module": "collections"
+    },
+    "invariants": [
+      {
+        "description": "Stack size is never negative",
+        "expression": "size >= 0"
+      },
+      {
+        "description": "Empty stack has size zero",
+        "expression": "empty == (size == 0)"
+      },
+      {
+        "description": "Stack capacity is never exceeded",
+        "expression": "size <= capacity"
+      }
+    ],
+    "preconditions": [
+      {
+        "description": "Precondition for push: element must be valid",
+        "target": {
+          "method": "push"
+        },
+        "expression": "element != null && size < capacity"
+      },
+      {
+        "description": "Precondition for pop: stack must not be empty",
+        "target": {
+          "method": "pop"
+        },
+        "expression": "!empty"
+      },
+      {
+        "description": "Precondition for peek: stack must not be empty",
+        "target": {
+          "method": "peek"
+        },
+        "expression": "!empty"
+      }
+    ],
+    "postconditions": [
+      {
+        "description": "Postcondition for push: size increases by one",
+        "target": {
+          "method": "push"
+        },
+        "expression": "size == old.size + 1 && top() == element"
+      },
+      {
+        "description": "Postcondition for pop: size decreases by one",
+        "target": {
+          "method": "pop"
+        },
+        "expression": "size == old.size - 1"
+      },
+      {
+        "description": "Postcondition for peek: top element returned without modification",
+        "target": {
+          "method": "peek"
+        },
+        "expression": "size == old.size && return == old.top()"
+      }
+    ]
+  },
+  "tests": [
+    {
+      "name": "push-valid-element",
+      "description": "Pushing a valid element succeeds",
+      "input": {
+        "method": "push",
+        "element": 42,
+        "initialState": {
+          "size": 0,
+          "capacity": 10
+        }
+      },
+      "expected": {
+        "size": 1,
+        "top": 42
+      }
+    },
+    {
+      "name": "push-violates-precondition",
+      "description": "Pushing to full stack violates precondition",
+      "input": {
+        "method": "push",
+        "element": 42,
+        "initialState": {
+          "size": 10,
+          "capacity": 10
+        }
+      },
+      "expected": {
+        "error": "PreconditionViolation",
+        "message": "Stack capacity exceeded"
+      }
+    }
+  ],
+  "documentation": {
+    "overview": "This specification defines Design-by-Contract constraints for a stack data structure using preconditions, postconditions, and invariants. It ensures stack operations maintain consistency and fail predictably when misused."
+  }
+}

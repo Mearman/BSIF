@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "traffic-light-controller",
+    "version": "1.0.0",
+    "description": "Standard traffic light state machine with red, yellow, and green states",
+    "author": "City Transportation Department",
+    "license": "MIT"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      {
+        "name": "red",
+        "entry": "setTimer(30)"
+      },
+      {
+        "name": "yellow",
+        "entry": "setTimer(5)"
+      },
+      {
+        "name": "green",
+        "entry": "setTimer(25)"
+      }
+    ],
+    "transitions": [
+      {
+        "from": "red",
+        "to": "green",
+        "event": "timerExpired"
+      },
+      {
+        "from": "green",
+        "to": "yellow",
+        "event": "timerExpired"
+      },
+      {
+        "from": "yellow",
+        "to": "red",
+        "event": "timerExpired"
+      }
+    ],
+    "initial": "red"
+  },
+  "tests": [
+    {
+      "name": "red-to-green-transition",
+      "description": "Timer expiration in red state transitions to green",
+      "input": {
+        "currentState": "red",
+        "event": "timerExpired"
+      },
+      "expected": {
+        "currentState": "green",
+        "timerSet": 30
+      }
+    },
+    {
+      "name": "complete-cycle",
+      "description": "Traffic light cycles through all states",
+      "input": {
+        "initialState": "red",
+        "events": ["timerExpired", "timerExpired", "timerExpired"]
+      },
+      "expected": {
+        "currentState": "red",
+        "cyclesCompleted": 1
+      }
+    }
+  ],
+  "documentation": {
+    "overview": "This specification defines the behavior of a standard traffic light controller. The light cycles through three states: red (30 seconds), green (25 seconds), and yellow (5 seconds). Each state transition is triggered by a timer expiration event.",
+    "examples": [
+      {
+        "title": "Normal Operation",
+        "description": "The traffic light cycles continuously: red -> green -> yellow -> red"
+      }
+    ]
+  }
+}
