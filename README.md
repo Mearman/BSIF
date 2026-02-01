@@ -116,15 +116,33 @@ Write your behavioral specification once, verify it against any implementation.
 | **Requirements specification** | ✅ Complete |
 | **Survey of existing frameworks** | ✅ Complete |
 | **Gap analysis** | ✅ Complete |
-| **BSIF format design** | 🔄 In Progress |
+| **BSIF formal specification** | ✅ Complete |
+| **Formal grammar (EBNF)** | ✅ Complete |
+| **JSON Schema validator** | ✅ Complete |
+| **Example specifications** | ✅ Complete |
+| **Conformance tests** | ✅ Complete |
 | **Reference implementation** | ⏳ Not Started |
-| **Conformance tests** | ⏳ Not Started |
 
 ---
 
 ## Documentation
 
-- **[Requirements Specification](docs/specification.md)** — Complete BSIF requirements
+### Specification
+
+- **[BSIF Specification (v1.0.0-draft)](docs/bsif-spec.md)** — Complete formal specification with syntax, semantics, and conformance requirements
+- **[Formal Grammar (EBNF)](docs/grammar/bsif.ebnf)** — Machine-parseable grammar for BSIF
+- **[JSON Schema](docs/schemas/bsif.json)** — Schema validation for BSIF documents
+- **[Security Considerations](docs/security.md)** — Security analysis and mitigation strategies
+- **[Versioning Policy](docs/versioning.md)** — Semantic versioning and compatibility rules
+
+### Examples
+
+- **[State Machine Example](docs/examples/state-machine.bsif.json)** — Traffic light controller
+- **[Temporal Logic Example](docs/examples/temporal.bsif.json)** — Mutual exclusion properties
+- **[Constraints Example](docs/examples/constraints.bsif.json)** — Stack contracts
+
+### Research
+
 - **[Gap Analysis](docs/research/surveys/gap-analysis.md)** — What's missing and why
 - **[Interchange Format Design](docs/research/design/interchange-format-design.md)** — BSIF design requirements
 - **[Testable Program Specifications](docs/research/surveys/testable-program-specifications.md)** — Framework survey
