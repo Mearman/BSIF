@@ -1,0 +1,48 @@
+{
+  "name": "@bsif/reference",
+  "version": "0.1.0",
+  "description": "BSIF Reference Implementation - Parser, validator, and CLI tool for Behavioral Specification Interchange Format",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "bin": {
+    "bsif": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "bsif": "tsx src/cli.ts",
+    "build": "tsc",
+    "ci": "npm run lint && npm run test:types && npm run test",
+    "lint": "eslint --cache . && tsc --noEmit",
+    "lint:fix": "eslint . --fix",
+    "test": "tsx --test test/*.test.ts test/commands/*.test.ts",
+    "test:coverage": "c8 tsx --test test/*.test.ts test/commands/*.test.ts",
+    "test:types": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "typescript": "~5.9.3",
+    "yaml": "~2.3.4",
+    "zod": "~4.3.6"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "~20.3.1",
+    "@commitlint/config-conventional": "~20.3.1",
+    "@eslint/js": "~9.39.2",
+    "@eslint/markdown": "~7.5.1",
+    "@types/node": "~25.0.10",
+    "c8": "~10.1.3",
+    "eslint": "~9.39.2",
+    "eslint-plugin-jsonc": "~2.21.0",
+    "globals": "~17.1.0",
+    "tsx": "~4.21.0",
+    "typescript-eslint": "~8.53.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
