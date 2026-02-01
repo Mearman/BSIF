@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 import { validateCommand } from "./commands/validate.js";
 import { checkCommand } from "./commands/check.js";
 import { formatCommand } from "./commands/format.js";
+import { convertCommand } from "./commands/convert.js";
 
 //==============================================================================
 // CLI Types
@@ -38,6 +39,11 @@ async function main(args: string[]): Promise<number> {
 			return 1;
 		}
 
+		// Convert command may have a second positional argument (output path)
+		if (command === "convert" && positional.length > 1) {
+			values.output = positional[1];
+		}
+
 		switch (command) {
 		case "validate":
 			return await validateCommand(filePath, values);
@@ -45,6 +51,8 @@ async function main(args: string[]): Promise<number> {
 			return await checkCommand(filePath, values);
 		case "format":
 			return await formatCommand(filePath, values);
+		case "convert":
+			return await convertCommand(filePath, values);
 		default:
 			console.error(`Unknown command: ${command}`);
 			printHelp();
@@ -66,6 +74,8 @@ function parseCliArgs(args: string[]): ParsedArgs {
 		options: {
 			help: { type: "boolean", short: "h" },
 			version: { type: "boolean", short: "v" },
+			format: { type: "string" },
+			output: { type: "string", short: "o" },
 		},
 		allowPositionals: true,
 	});
@@ -106,9 +116,14 @@ Usage:
   bsif <command> [options] <file>
 
 Commands:
-  validate <file>  Validate BSIF document against schema
-  check <file>     Validate BSIF document semantics
-  format <file>    Format BSIF document
+  validate <file>   Validate BSIF document against schema
+  check <file>      Validate BSIF document semantics
+  format <file>     Format BSIF document
+  convert <input>   Convert between JSON and YAML formats
+
+Convert Options:
+  --format=<json|yaml>  Output format
+  --output=<path>       Output file path
 
 Options:
   -h, --help       Show this help message
@@ -118,6 +133,8 @@ Examples:
   bsif validate spec.bsif.json
   bsif check docs/examples/state-machine.bsif.json
   bsif format spec.bsif.json
+  bsif convert spec.bsif.json --format=yaml --output spec.bsif.yaml
+  bsif convert spec.bsif.yaml spec.bsif.json
 `);
 }
 
