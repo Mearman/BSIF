@@ -29,6 +29,18 @@ export const enum ErrorCode {
 	InvalidLTLFormula = "E105",
 	EventNotFound = "E106",
 	ParticipantNotFound = "E107",
+	DuplicateName = "E108",
+	UndefinedVariable = "E109",
+	IncompatibleTypes = "E110",
+	InvalidExpression = "E111",
+	InvalidTargetReference = "E112",
+	UndefinedEvent = "E113",
+	PayloadTypeMismatch = "E114",
+	UnusedEventDeclaration = "E115",
+	UndefinedParticipant = "E116",
+	InvalidMessageSequence = "E117",
+	InvalidComponentType = "E118",
+	VersionMismatch = "E119",
 
 	// Validation errors (E200-E299)
 	ValidationFailed = "E200",
