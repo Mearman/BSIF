@@ -1,0 +1,391 @@
+(* BSIF Formal Grammar in ISO/IEC 14977 EBNF *)
+(* Version: 1.0.0-draft *)
+(* Date: 2025-02-01 *)
+
+(* ================================================================= *)
+(* LEXICAL SYNTAX *)
+(* ================================================================= *)
+
+(* Identifiers start with letter or underscore *)
+identifier = letter | underscore, ( letter | digit | underscore )*;
+
+letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M"
+       | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
+       | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m"
+       | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z";
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+
+underscore = "_";
+
+(* String literals - double quoted *)
+string_literal = '"', { string_char }, '"';
+
+(* Quoted strings (alternative) *)
+quoted_string = "'", { string_char }, "'";
+
+string_char = character - ( '"' | "'" ) | escape_sequence;
+
+character = ? any Unicode character ?;
+
+(* Escape sequences *)
+escape_sequence = '\', ( "n" | "t" | "r" | '\' | "'" | '"' );
+
+(* Numbers *)
+integer_literal = digit, { digit };
+
+float_literal = digit, { digit }, '.', digit, { digit }, [ exponent ];
+
+exponent = ( "e" | "E" ), [ "+" | "-" ], digit, { digit };
+
+(* Boolean and null *)
+boolean_literal = "true" | "false";
+
+null_literal = "null";
+
+(* Comments - hash to end of line *)
+comment = '#', { character - end_of_line };
+
+end_of_line = ? carriage return or line feed ?;
+
+(* Whitespace - ignored between tokens *)
+whitespace = ? space, tab, carriage return, line feed ?;
+
+
+(* ================================================================= *)
+(* CONCRETE SYNTAX - ABSTRACTED (JSON STRUCTURE) *)
+(* ================================================================= *)
+
+(* Note: This is an abstract representation. The concrete syntax is *)
+(* JSON or YAML as defined in RFC 8259 and YAML 1.2. *)
+
+bsif_document =
+    '{',
+        '"metadata"', ':', metadata_section,
+        '"semantics"', ':', semantics_section,
+        [ '"tools"', ':', tools_section ],
+        [ '"tests"', ':', tests_section ],
+        [ '"documentation"', ':', documentation_section ],
+    '}';
+
+
+(* ================================================================= *)
+(* METADATA SECTION *)
+(* ================================================================= *)
+
+metadata_section =
+    '{',
+        [ '"bsif_version"', ':', version_string ],
+        [ '"name"', ':', string_literal ],
+        [ '"version"', ':', version_string ],
+        [ '"description"', ':', string_literal ],
+        [ '"author"', ':', string_literal ],
+        [ '"license"', ':', string_literal ],
+        [ '"references"', ':', '[', string_literal, { ',', string_literal }, ']' ],
+    '}';
+
+(* Semantic versioning 2.0.0 compatible *)
+version_string = string_literal;
+
+
+(* ================================================================= *)
+(* SEMANTICS SECTION *)
+(* ================================================================= *)
+
+semantics_section =
+    state_machine_spec |
+    temporal_spec |
+    constraints_spec |
+    events_spec |
+    interaction_spec |
+    hybrid_spec;
+
+
+(* ----------------------------------------------------------------- *)
+(* STATE MACHINE *)
+(* ----------------------------------------------------------------- *)
+
+state_machine_spec =
+    '{',
+        '"type"', ':', '"state-machine"', ',',
+        '"states"', ':', states_definition, ',',
+        '"transitions"', ':', transitions_definition, ',',
+        [ '"initial"', ':', identifier, ',' ],
+        [ '"final"', ':', '[', identifier, { ',', identifier }, ']' ],
+    '}';
+
+states_definition =
+    '[', state_definition, { ',', state_definition }, ']';
+
+state_definition =
+    '{',
+        '"name"', ':', identifier, ',',
+        [ '"entry"', ':', expression, ',' ],
+        [ '"exit"', ':', expression, ',' ],
+        [ '"parent"', ':', identifier, ',' ],
+        [ '"parallel"', ':', boolean_literal ],
+    '}';
+
+transitions_definition =
+    '[', transition_definition, { ',', transition_definition }, ']';
+
+transition_definition =
+    '{',
+        '"from"', ':', identifier, ',',
+        '"to"', ':', identifier, ',',
+        [ '"event"', ':', event_reference, ',' ],
+        [ '"guard"', ':', expression, ',' ],
+        [ '"action"', ':', expression ],
+    '}';
+
+event_reference = identifier | string_literal;
+
+(* Expressions are tool-specific strings *)
+expression = string_literal;
+
+
+(* ----------------------------------------------------------------- *)
+(* TEMPORAL LOGIC *)
+(* ----------------------------------------------------------------- *)
+
+temporal_spec =
+    '{',
+        '"type"', ':', '"temporal"', ',',
+        '"logic"', ':', ( '"ltl"' | '"ctl"' ), ',',
+        '"variables"', ':', variables_definition, ',',
+        '"properties"', ':', properties_definition,
+    '}';
+
+variables_definition =
+    '{', variable_decl, { ',', variable_decl }, '}';
+
+variable_decl = identifier, ':',
+    ( '"boolean"' | '"integer"' | '"string"' | object_type );
+
+object_type =
+    '{',
+        '"type"', ':', '"object"', ',',
+        '"properties"', ':', properties_type_definition,
+    '}';
+
+properties_type_definition =
+    '{', property_type_decl, { ',', property_type_decl }, '}';
+
+property_type_decl = identifier, ':', type_reference;
+
+type_reference = '"boolean"' | '"integer"' | '"string"' | identifier;
+
+properties_definition =
+    '[', property_definition, { ',', property_definition }, ']';
+
+property_definition =
+    '{',
+        '"name"', ':', identifier, ',',
+        '"formula"', ':', ltl_formula,
+    '}';
+
+ltl_formula =
+    unary_formula |
+    binary_formula |
+    variable_ref |
+    literal_value;
+
+unary_formula =
+    '{',
+        '"operator"', ':', unary_operator, ',',
+        '"operand"', ':', ltl_formula,
+    '}';
+
+binary_formula =
+    '{',
+        '"operator"', ':', binary_operator, ',',
+        '"operands"', ':', '[', ltl_formula, { ',', ltl_formula }, ']',
+    '}';
+
+variable_ref =
+    '{',
+        '"operator"', ':', '"variable"', ',',
+        '"variable"', ':', identifier,
+    '}';
+
+literal_value =
+    '{',
+        '"operator"', ':', '"literal"', ',',
+        '"value"', ':', ( boolean_literal | integer_literal | string_literal ),
+    '}';
+
+unary_operator =
+    '"not"' |
+    '"globally"' |    (* □ *)
+    '"finally"' |     (* ◇ *)
+    '"next"';         (* ○ *)
+
+binary_operator =
+    '"and"' | '"or"' | '"implies"' | '"until"';
+
+
+(* ----------------------------------------------------------------- *)
+(* CONSTRAINTS *)
+(* ----------------------------------------------------------------- *)
+
+constraints_spec =
+    '{',
+        '"type"', ':', '"constraints"', ',',
+        '"target"', ':', target_reference, ',',
+        '"preconditions"', ':', '[', constraint, { ',', constraint }, ']', ',',
+        '"postconditions"', ':', '[', constraint, { ',', constraint }, ']', ',',
+        [ '"invariants"', ':', '[', constraint, { ',', constraint }, ']' ],
+    '}';
+
+target_reference =
+    '{',
+        [ '"function"', ':', string_literal, ',' ],
+        [ '"method"', ':', string_literal, ',' ],
+        [ '"class"', ':', string_literal, ',' ],
+        [ '"module"', ':', string_literal ],
+    '}';
+
+constraint =
+    '{',
+        '"description"', ':', string_literal, ',',
+        '"expression"', ':', string_literal,
+    '}';
+
+
+(* ----------------------------------------------------------------- *)
+(* EVENTS *)
+(* ----------------------------------------------------------------- *)
+
+events_spec =
+    '{',
+        '"type"', ':', '"events"', ',',
+        '"events"', ':', events_definition, ',',
+        '"handlers"', ':', handlers_definition,
+    '}';
+
+events_definition = '{', event_decl, { ',', event_decl }, '}';
+
+event_decl = identifier, ':',
+    '{',
+        [ '"payload"', ':', type_definition, ',' ],
+        [ '"attributes"', ':', object ],
+    '}';
+
+type_definition = primitive_type | object_type;
+
+primitive_type = '"boolean"' | '"integer"' | '"string"';
+
+(* Generic object - tool-specific *)
+object = '{', { string_literal, ':', value }, '}';
+
+value = string_literal | number_literal | boolean_literal | null_literal
+       | object | array;
+
+number_literal = integer_literal | float_literal;
+
+array = '[', [ value, { ',', value } ], ']';
+
+handlers_definition = '[', handler_definition, { ',', handler_definition }, ']';
+
+handler_definition =
+    '{',
+        '"event"', ':', identifier, ',',
+        [ '"filter"', ':', expression, ',' ],
+        [ '"action"', ':', expression, ',' ],
+        [ '"propagates"', ':', boolean_literal ],
+    '}';
+
+
+(* ----------------------------------------------------------------- *)
+(* INTERACTION/PROTOCOL *)
+(* ----------------------------------------------------------------- *)
+
+interaction_spec =
+    '{',
+        '"type"', ':', '"interaction"', ',',
+        '"participants"', ':', participants_definition, ',',
+        '"messages"', ':', messages_definition,
+    '}';
+
+participants_definition =
+    '[', participant_definition, { ',', participant_definition }, ']';
+
+participant_definition =
+    '{',
+        '"name"', ':', identifier, ',',
+        [ '"role"', ':', string_literal ],
+    '}';
+
+messages_definition =
+    '[', message_sequence, { ',', message_sequence }, ']';
+
+message_sequence =
+    '{',
+        '"from"', ':', identifier, ',',
+        '"to"', ':', identifier, ',',
+        '"message"', ':', string_literal, ',',
+        [ '"payload"', ':', type_definition, ',' ],
+        [ '"guard"', ':', expression ],
+    '}';
+
+
+(* ----------------------------------------------------------------- *)
+(* HYBRID SPECIFICATION *)
+(* ----------------------------------------------------------------- *)
+
+hybrid_spec =
+    '{',
+        '"type"', ':', '"hybrid"', ',',
+        '"components"', ':', '[', semantics_section, { ',', semantics_section }, ']',
+    '}';
+
+
+(* ================================================================= *)
+(* TOOLS SECTION (OPTIONAL) *)
+(* ================================================================= *)
+
+tools_section = '{', tool_mapping, { ',', tool_mapping }, '}';
+
+tool_mapping = identifier, ':', object;
+
+
+(* ================================================================= *)
+(* TESTS SECTION (OPTIONAL) *)
+(* ================================================================= *)
+
+tests_section = '[', test_case, { ',', test_case }, ']';
+
+test_case =
+    '{',
+        '"name"', ':', string_literal, ',',
+        '"description"', ':', string_literal, ',',
+        '"input"', ':', object, ',',
+        '"expected"', ':', object,
+    '}';
+
+
+(* ================================================================= *)
+(* DOCUMENTATION SECTION (OPTIONAL) *)
+(* ================================================================= *)
+
+documentation_section =
+    '{',
+        [ '"overview"', ':', string_literal, ',' ],
+        [ '"examples"', ':', '[', object, { ',', object }, ']' ],
+    '}';
+
+
+(* ================================================================= *)
+(* END OF GRAMMAR *)
+(* ================================================================= *)
+
+(*
+ * This EBNF grammar defines the abstract structure of BSIF documents.
+ * The concrete serialization is JSON (primary) or YAML (alternative).
+ *
+ * Grammar tools that can parse this:
+ * - ISO/IEC 14977 compliant EBNF parsers
+ * - ANTLR (with EBNF grammar plugin)
+ * - JetBrains Grammar Parser (with EBNF)
+ * - Custom parsers implementing ISO EBNF
+ *)
