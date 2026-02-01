@@ -1,0 +1,14 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-spec"
+	},
+	"semantics": {
+		"initial": "nonexistent",
+		"states": [
+			{ "name": "idle" }
+		],
+		"transitions": [],
+		"type": "state-machine"
+	}
+}
