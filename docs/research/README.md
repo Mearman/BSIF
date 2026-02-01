@@ -54,6 +54,7 @@ docs/research/
 | **[AI/ML Verification Landscape](deep-dives/ai-ml-verification-landscape.md)** | Neural network verification tools (Marabou, fairness, robustness) |
 | **[Cyber-Physical Systems Tools](deep-dives/cyber-physical-systems-tools.md)** | Hybrid automata tools (SpaceEx, PHAVer, dReal, KeYmaera X) |
 | **[Emerging Developments 2024-2025](deep-dives/emerging-developments-2024-2025.md)** | New tools, standards, trends |
+| **[SpecLang (GitHub Next)](deep-dives/speclang-github-next.md)** | AI-powered natural language specs; comparison with BSIF |
 
 ### 📚 Practical Guides
 
