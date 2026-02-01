@@ -1,9 +1,33 @@
 // BSIF Reference Implementation - Validator
 // Two-stage validation: Schema validation (Zod) + Semantic validation
 
-import type { BSIFDocument, StateMachine, State } from "./schemas.js";
-import { ErrorCode, createError, createSuccess, createFailure, type ValidationError, type ValidationResult } from "./errors.js";
-import { bsifDocument, isStateMachine } from "./schemas.js";
+import type {
+	BSIFDocument,
+	StateMachine,
+	State,
+	Temporal,
+	Constraints,
+	Events,
+	Interaction,
+	Hybrid,
+} from "./schemas.js";
+import {
+	ErrorCode,
+	createError,
+	createSuccess,
+	createFailure,
+	type ValidationError,
+	type ValidationResult,
+} from "./errors.js";
+import {
+	bsifDocument,
+	isStateMachine,
+	isTemporal,
+	isConstraints,
+	isEvents,
+	isInteraction,
+	isHybrid,
+} from "./schemas.js";
 
 //==============================================================================
 // Validation Options
@@ -70,8 +94,22 @@ export async function validateFile(
 function validateSemantics(doc: BSIFDocument): readonly ValidationError[] {
 	const errors: ValidationError[] = [];
 
+	// Add general validation
+	errors.push(...validateGeneral(doc));
+
+	// Dispatch to type-specific validators
 	if (isStateMachine(doc.semantics)) {
 		errors.push(...validateStateMachine(doc.semantics));
+	} else if (isTemporal(doc.semantics)) {
+		errors.push(...validateTemporal(doc.semantics));
+	} else if (isConstraints(doc.semantics)) {
+		errors.push(...validateConstraints(doc.semantics));
+	} else if (isEvents(doc.semantics)) {
+		errors.push(...validateEvents(doc.semantics));
+	} else if (isInteraction(doc.semantics)) {
+		errors.push(...validateInteraction(doc.semantics));
+	} else if (isHybrid(doc.semantics)) {
+		errors.push(...validateHybrid(doc.semantics));
 	}
 
 	return errors;
@@ -183,4 +221,328 @@ function detectCircularReference(
 
 	recursionStack.delete(stateName);
 	return null;
+}
+
+//==============================================================================
+// Temporal Logic Validation
+//==============================================================================
+
+function validateTemporal(temporal: Temporal): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	const declaredVariables = new Set(Object.keys(temporal.variables));
+	const propertyNames = new Set<string>();
+
+	// Check each property
+	for (const property of temporal.properties) {
+		// Check for duplicate property names
+		if (propertyNames.has(property.name)) {
+			errors.push(
+				createError(
+					ErrorCode.DuplicateName,
+					`Duplicate property name "${property.name}"`,
+					{ path: ["properties", property.name] },
+				),
+			);
+		}
+		propertyNames.add(property.name);
+
+		// Collect variable references from formula
+		const referencedVars = collectVariableReferences(property.formula);
+
+		// Check all variables are defined
+		for (const variableName of referencedVars) {
+			if (!declaredVariables.has(variableName)) {
+				errors.push(
+					createError(
+						ErrorCode.UndefinedVariable,
+						`Variable "${variableName}" is referenced but not declared`,
+						{
+							path: ["properties", property.name],
+							suggestion: `Add variable "${variableName}" to the variables section`,
+						},
+					),
+				);
+			}
+		}
+	}
+
+	return errors;
+}
+
+// Collect all variable references from an LTL formula
+function collectVariableReferences(formula: unknown): Set<string> {
+	const variables = new Set<string>();
+
+	if (typeof formula !== "object" || formula === null) {
+		return variables;
+	}
+
+	if ("operator" in formula && formula.operator === "variable" && "variable" in formula && typeof formula.variable === "string") {
+		variables.add(formula.variable);
+	} else if ("operand" in formula) {
+		const childVars = collectVariableReferences(formula.operand);
+		childVars.forEach((v) => variables.add(v));
+	} else if ("operands" in formula && Array.isArray(formula.operands)) {
+		for (const operand of formula.operands) {
+			const childVars = collectVariableReferences(operand);
+			childVars.forEach((v) => variables.add(v));
+		}
+	}
+
+	return variables;
+}
+
+//==============================================================================
+// Constraints Validation
+//==============================================================================
+
+function validateConstraints(constraints: Constraints): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	// Basic expression syntax validation
+	for (const precondition of constraints.preconditions) {
+		errors.push(...validateExpressionSyntax(precondition.expression, "preconditions"));
+	}
+
+	for (const postcondition of constraints.postconditions) {
+		errors.push(...validateExpressionSyntax(postcondition.expression, "postconditions"));
+	}
+
+	if (constraints.invariants) {
+		for (const invariant of constraints.invariants) {
+			errors.push(...validateExpressionSyntax(invariant.expression, "invariants"));
+		}
+	}
+
+	return errors;
+}
+
+function validateExpressionSyntax(expression: string, context: string): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	// Check for empty expression
+	if (!expression.trim()) {
+		errors.push(
+			createError(
+				ErrorCode.InvalidExpression,
+				"Empty constraint expression",
+				{ path: [context] },
+			),
+		);
+	}
+
+	// Basic parenthesis matching
+	let depth = 0;
+	for (const char of expression) {
+		if (char === "(") depth++;
+		if (char === ")") depth--;
+		if (depth < 0) {
+			errors.push(
+				createError(
+					ErrorCode.InvalidExpression,
+					"Unmatched closing parenthesis in constraint expression",
+					{ path: [context] },
+				),
+			);
+			break;
+		}
+	}
+
+	if (depth > 0) {
+		errors.push(
+			createError(
+				ErrorCode.InvalidExpression,
+				"Unmatched opening parenthesis in constraint expression",
+				{ path: [context] },
+			),
+		);
+	}
+
+	// Check for obviously invalid patterns (consecutive operators)
+	if (/[*+=]{2,}/.test(expression)) {
+		errors.push(
+			createError(
+				ErrorCode.InvalidExpression,
+				"Invalid operator sequence in constraint expression",
+				{ path: [context] },
+			),
+		);
+	}
+
+	return errors;
+}
+
+//==============================================================================
+// Events Validation
+//==============================================================================
+
+function validateEvents(events: Events): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	const declaredEvents = new Set(Object.keys(events.events));
+	const referencedEvents = new Set<string>();
+
+	// Check each handler
+	for (const handler of events.handlers) {
+		// Check that referenced events are declared
+		if (!declaredEvents.has(handler.event)) {
+			errors.push(
+				createError(
+					ErrorCode.UndefinedEvent,
+					`Handler references undefined event "${handler.event}"`,
+					{
+						path: ["handlers", handler.event],
+						suggestion: `Add event declaration for "${handler.event}" or fix handler name`,
+					},
+				),
+			);
+		} else {
+			referencedEvents.add(handler.event);
+		}
+	}
+
+	// Check for unused event declarations (warnings)
+	const unusedEvents = [...declaredEvents].filter((e) => !referencedEvents.has(e));
+	for (const unusedEvent of unusedEvents) {
+		errors.push(
+			createError(
+				ErrorCode.UnusedEventDeclaration,
+				`Event "${unusedEvent}" is declared but never used`,
+				{ severity: "warning", path: ["events", unusedEvent] },
+			),
+		);
+	}
+
+	return errors;
+}
+
+//==============================================================================
+// Interaction Validation
+//==============================================================================
+
+function validateInteraction(interaction: Interaction): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	const participantNames = new Set(interaction.participants.map((p) => p.name));
+
+	// Check for duplicate participant names
+	const seenNames = new Set<string>();
+	for (const participant of interaction.participants) {
+		if (seenNames.has(participant.name)) {
+			errors.push(
+				createError(
+					ErrorCode.DuplicateName,
+					`Duplicate participant name "${participant.name}"`,
+					{ path: ["participants", participant.name] },
+				),
+			);
+		}
+		seenNames.add(participant.name);
+	}
+
+	// Check each message references valid participants
+	for (const message of interaction.messages) {
+		if (!participantNames.has(message.from)) {
+			errors.push(
+				createError(
+					ErrorCode.UndefinedParticipant,
+					`Message references undefined participant "${message.from}"`,
+					{ path: ["messages", message.from] },
+				),
+			);
+		}
+
+		if (!participantNames.has(message.to)) {
+			errors.push(
+				createError(
+					ErrorCode.UndefinedParticipant,
+					`Message references undefined participant "${message.to}"`,
+					{ path: ["messages", message.to] },
+				),
+			);
+		}
+	}
+
+	return errors;
+}
+
+//==============================================================================
+// Hybrid Validation
+//==============================================================================
+
+function validateHybrid(hybrid: Hybrid): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	// Check each component is a valid semantics type
+	for (let i = 0; i < hybrid.components.length; i++) {
+		const component = hybrid.components[i];
+
+		// Use type guards to check if valid
+		const isValid =
+			isStateMachine(component) ||
+			isTemporal(component) ||
+			isConstraints(component) ||
+			isEvents(component) ||
+			isInteraction(component) ||
+			isHybrid(component);
+
+		if (!isValid) {
+			errors.push(
+				createError(
+					ErrorCode.InvalidComponentType,
+					`Component at index ${i} is not a valid semantic type`,
+					{ path: ["components", String(i)] },
+				),
+			);
+		}
+	}
+
+	return errors;
+}
+
+//==============================================================================
+// General Validation
+//==============================================================================
+
+function validateGeneral(doc: BSIFDocument): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	// Validate BSIF version compatibility
+	const version = doc.metadata.bsif_version;
+	const supportedVersions = ["1.0.0", "1.0.1", "1.0.2"];
+
+	if (!supportedVersions.some((v) => version.startsWith(v.slice(0, 3)))) {
+		errors.push(
+			createError(
+				ErrorCode.VersionMismatch,
+				`BSIF version "${version}" is not supported (supported: 1.0.x)`,
+				{ path: ["metadata", "bsif_version"] },
+			),
+		);
+	}
+
+	// Check for duplicate names based on semantic type
+	if (isStateMachine(doc.semantics)) {
+		errors.push(...checkDuplicateStateNames(doc.semantics));
+	}
+
+	return errors;
+}
+
+function checkDuplicateStateNames(sm: StateMachine): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	const seenNames = new Set<string>();
+
+	for (const state of sm.states) {
+		if (seenNames.has(state.name)) {
+			errors.push(
+				createError(
+					ErrorCode.DuplicateName,
+					`Duplicate state name "${state.name}"`,
+					{ path: ["states", state.name] },
+				),
+			);
+		}
+		seenNames.add(state.name);
+	}
+
+	return errors;
 }
