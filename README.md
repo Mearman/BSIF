@@ -92,6 +92,8 @@ Write your behavioral specification once, verify it against any implementation.
 | **BSIF-014** | Tool-specific mappings/extensions | Should |
 | **BSIF-015** | Conformance test suite | Must |
 
+**Format Syntax:** BSIF supports both **JSON (primary)** and **YAML** serialization. Tools must accept both formats, JSON is the canonical representation for interchange and schema validation.
+
 ### Semantic Coverage
 
 | Category | Must Support | Should Support |
