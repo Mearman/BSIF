@@ -1,136 +1,142 @@
-# prog-spec
+# BSIF: Behavioral Specification Interchange Format
 
-**Research project exploring language-agnostic, formal specifications for program behavior.**
-
----
-
-## Overview
-
-**prog-spec** is a research project investigating how to define formal, testable specifications for program behavior that work across programming languages.
-
-**The Core Question:** *How can we define a specification for "Program X performs action Y" such that any implementation in any programming language can be tested against it?*
+**Status:** Research & Design Phase
+**Started:** 2025
+**Topic:** Universal format for language-agnostic program behavior specifications
 
 ---
 
-## Research Goal
+## The Problem
 
-Current software lacks a universal, RFC-style specification for **application behavior** that can be:
-- **Language-agnostic** — works with any programming language
-- **Formal** — mathematically precise, not just natural language
-- **Testable** — automated verification against implementations
-- **Behavioral** — defines what the program does (not just data structures)
+Software lacks a universal way to specify program behavior that works across programming languages.
 
----
+We have specifications for:
+- **Data** — JSON Schema, Protocol Buffers, Apache Avro
+- **APIs** — OpenAPI, GraphQL, gRPC
+- **Infrastructure** — Terraform, Kubernetes manifests
 
-## What We've Found
+But we have **nothing** for specifying **what programs do** in a language-agnostic way.
 
-### The Landscape is Fragmented
-
-| Domain | Tools | Status |
-|--------|-------|--------|
-| **API Behavior** | Pact, OpenAPI | Mature |
-| **Concurrent Systems** | TLA+ | Mature |
-| **State Machines** | SCXML, UML | Mature |
-| **Functional Properties** | QuickCheck, Hypothesis | Mature |
-| **Formal Verification** | Z, B, VDM, Dafny, F* | Academic/Niche |
-| **AI/ML Systems** | Marabou, fairness tools | Emerging |
-
-### The Gaps
-
-| Gap | Impact | Status |
-|-----|--------|--------|
-| **Universal behavioral spec language** | Very High | No candidates exist |
-| **Standard interchange format** | High | Completely missing |
-| **Package repository for specs** | Medium | No npm-for-specs exists |
-| **Executable semantics for formal specs** | High | Research stage |
-| **AI/ML verification** | High | Early research |
-| **Resource/performance verification** | Medium | Research stage |
-
-### The Recommendation
-
-**No single tool solves all problems.** The future is **layered specifications**:
-- **Property-Based Testing** for functional properties
-- **Contract Testing** for API boundaries
-- **Formal Methods** (TLA+, Alloy) for critical components
-- **State Machines** (SCXML) for complex behavior
+> "Program X must maintain invariant Y under condition Z" — how do you write this
+> once, then verify against implementations in Go, Rust, Python, and Java?
 
 ---
 
-## Research Documents
+## What We're Building
 
-All research is documented in the **[docs/research/](docs/research/)** directory:
+**BSIF (Behavioral Specification Interchange Format)**
 
-### Quick Start
+A universal format for behavioral specifications — like JSON Schema for data, but for what programs **DO**.
 
-| Document | Purpose |
-|----------|---------|
-| **[Executive Summary](docs/research/reference/executive-summary.md)** | 5-minute overview |
-| **[Gap Analysis](docs/research/surveys/gap-analysis.md)** | What's missing and why |
-| **[Tool Selection Guide](docs/research/guides/tool-selection-guide.md)** | Choose the right tools |
-| **[Layered Specs Guide](docs/research/guides/layered-specifications-guide.md)** | Implementation patterns |
+State machines, temporal logic, constraints, event handling — all in one interoperable format that any tool can read, any language can implement.
 
-### Core Research
-
-- **[Cross-Language Logic Specifications](docs/research/surveys/cross-language-logic-specifications.md)** — Survey of portable logic frameworks (CEL, Rego, DMN, CWL, BPMN, etc.)
-- **[Testable Program Specifications](docs/research/surveys/testable-program-specifications.md)** — Comprehensive survey with tooling and capability analysis
-- **[Gap Analysis](docs/research/surveys/gap-analysis.md)** — Consolidated gaps and missing tooling
-
-### Design Proposals
-
-- **[Interchange Format Design](docs/research/design/interchange-format-design.md)** — Requirements for behavioral spec interchange (learning from SMT-LIB, LLVM IR, WebAssembly)
-- **[Spec Registry Design](docs/research/design/spec-registry-design.md)** — Package repository design for specifications
-
-### Deep Dives
-
-- **[Executable Semantics](docs/research/deep-dives/executable-semantics-report.md)** — Making Z, B, VDM executable
-- **[Industry Adoption](docs/research/deep-dives/industry-adoption-case-studies.md)** — MongoDB/TLA+, Microsoft/Pact, Amazon/AWS
-- **[AI/ML Verification](docs/research/deep-dives/ai-ml-verification-landscape.md)** — Neural network verification tools
-- **[Cyber-Physical Systems](docs/research/deep-dives/cyber-physical-systems-tools.md)** — Hybrid automata, dReal, KeYmaera X
-- **[Emerging Developments](docs/research/deep-dives/emerging-developments-2024-2025.md)** — New tools, standards, trends
-
-### See Also
-
-- **[docs/research/README.md](docs/research/README.md)** — Full research index
-- **[References](docs/research/reference/references.md)** — 170+ consolidated references
+Write your behavioral specification once, verify it against any implementation.
 
 ---
 
-## Key Takeaways
+## How BSIF Compares to Existing Tools
 
-1. **No universal behavioral spec language exists** — use layered approach
-2. **Primary gap is standardization** — tools exist but don't interoperate
-3. **AI integration is the 2025 trend** — NL→Spec, AI-assisted proofs
-4. **Industry adoption is real and growing** — MongoDB, Microsoft, Amazon, Intel
-5. **Formal methods are becoming more accessible** — better tools, IDE support
+| Aspect | BSIF | Existing Tools |
+|--------|------|----------------|
+| **Scope** | Universal: state machines, temporal logic, constraints, events, interactions | Fragmented: each tool covers one domain |
+| **Language** | Language-agnostic format, any implementation language | Tied to specific ecosystems or requires per-language binding |
+| **Interoperability** | Standard interchange format, tools can work together | Proprietary formats, isolated ecosystems |
+| **Composition** | Specs can reference and extend other specs | No standard for composition |
+| **Reuse** | SpecRegistry for sharing (future) | No sharing mechanism |
+| **Verification** | Generate tests for any language | Verification tied to specific tools/languages |
+
+### Why Existing Tools Fall Short
+
+| Tool | What It Does | Limitation |
+|------|--------------|------------|
+| **TLA+** | Model checking for concurrent systems | Domain-specific, steep learning curve, tied to TLA+ toolchain |
+| **Pact** | Consumer-driven API contracts | HTTP/messaging only, doesn't verify general behavior |
+| **SCXML** | State machine execution | State machines only, limited to control flow |
+| **QuickCheck/Hypothesis** | Property-based testing | Per-language implementation, no portable spec format |
+| **OpenAPI** | REST API specification | Request/response only, not behavioral semantics |
+| **Alloy** | Structural modeling | No executable semantics, no test generation |
+| **Z Notation / B Method** | Formal specification | Not executable, no industry tooling, academic |
+| **CEL / Rego** | Portable expression languages | Decision logic only, not full behavior |
+
+**The Gap:** No single format captures general behavioral semantics in a way that's:
+- Formal enough for verification
+- Portable across tools
+- Implementable in any language
+
+---
+
+## BSIF Feature List
+
+### Core Capabilities
+
+| ID | Feature | Priority |
+|----|---------|----------|
+| **BSIF-001** | State machine specifications (states, transitions, hierarchy) | Must |
+| **BSIF-002** | Temporal logic specifications (LTL, CTL) | Must |
+| **BSIF-003** | Event-driven behavior specifications | Must |
+| **BSIF-004** | Interaction/protocol specifications | Must |
+| **BSIF-005** | Constraint specifications (pre/post, invariants) | Must |
+| **BSIF-006** | Data type specifications | Must |
+| **BSIF-007** | Concurrency specifications | Should |
+| **BSIF-008** | Real-time/timing constraints | Should |
+
+### Format Requirements
+
+| ID | Feature | Priority |
+|----|---------|----------|
+| **BSIF-009** | Human-readable (text-based format) | Must |
+| **BSIF-010** | Machine-parseable (unambiguous grammar) | Must |
+| **BSIF-011** | Versioning with compatibility guarantees | Must |
+| **BSIF-012** | Composition (specs referencing specs) | Must |
+| **BSIF-013** | Metadata (name, version, description, license) | Must |
+| **BSIF-014** | Tool-specific mappings/extensions | Should |
+| **BSIF-015** | Conformance test suite | Must |
+
+### Semantic Coverage
+
+| Category | Must Support | Should Support |
+|----------|--------------|-----------------|
+| **State Machines** | States, transitions, conditions, hierarchy | Concurrent states |
+| **Temporal Logic** | LTL operators, safety/liveness | CTL operators |
+| **Events** | Definitions, handlers, propagation | Filtering, correlation |
+| **Interactions** | Sequences, protocols | Security properties |
+| **Constraints** | Pre/post conditions, invariants | Resource constraints |
+| **Data** | Types, values, schemas | Generics, polymorphism |
+| **Concurrency** | Parallel composition | Synchronization |
+| **Real-time** | Deadlines, timing constraints | Periodic tasks |
 
 ---
 
 ## Status
 
-| Category | Status |
-|----------|--------|
+| Component | Status |
+|-----------|--------|
+| **Requirements specification** | ✅ Complete |
 | **Survey of existing frameworks** | ✅ Complete |
-| **Tooling ecosystem analysis** | ✅ Complete |
-| **Capability analysis** | ✅ Complete |
-| **Gap identification** | ✅ Complete |
-| **Industry adoption research** | ✅ Complete |
-| **Design proposals** | ✅ Complete |
-| **Practical guides** | ✅ Complete |
+| **Gap analysis** | ✅ Complete |
+| **BSIF format design** | 🔄 In Progress |
+| **Reference implementation** | ⏳ Not Started |
+| **Conformance tests** | ⏳ Not Started |
 
 ---
 
-## Related Work
+## Documentation
 
-This research builds on:
+- **[Requirements Specification](docs/specification.md)** — Complete BSIF requirements
+- **[Gap Analysis](docs/research/surveys/gap-analysis.md)** — What's missing and why
+- **[Interchange Format Design](docs/research/design/interchange-format-design.md)** — BSIF design requirements
+- **[Testable Program Specifications](docs/research/surveys/testable-program-specifications.md)** — Framework survey
+- **[Executive Summary](docs/research/reference/executive-summary.md)** — 5-minute overview
+- **[Research Index](docs/research/README.md)** — All research documents
 
-- **RFC 8785** — JSON Canonicalization Scheme (JCS)
-- **SMT-LIB** — SMT solver interchange format
-- **LLVM IR** — Compiler intermediate representation
-- **WebAssembly** — Cross-browser execution semantics
-- **OpenAPI Initiative** — API specification standard
+---
+
+## Contributing
+
+This is active research. Discussion and collaboration welcome.
 
 ---
 
 ## License
 
-Research documentation © 2025
+Research and specification documentation © 2025
