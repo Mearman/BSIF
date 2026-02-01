@@ -14,23 +14,61 @@ This directory contains research on formal specifications for program behavior t
 
 ---
 
+## Directory Structure
+
+```
+docs/research/
+├── README.md                           # This file
+├── surveys/                             # Core research surveys
+├── design/                              # Design proposals
+├── deep-dives/                          # Specialized research
+├── guides/                              # Practical guides
+└── reference/                           # Supporting docs
+```
+
+---
+
 ## Documents
 
-### Core Research
+### 📊 Surveys (Core Research)
 
 | Document | Lines | Description |
 |----------|-------|-------------|
-| **[Cross-Language Logic Specifications](cross-language-logic-specifications.md)** | 294 | Survey of frameworks for portable logic (CEL, Rego, DMN, CWL, BPMN, etc.) |
-| **[Testable Program Specifications](testable-program-specifications.md)** | 1400+ | Comprehensive survey of testable specifications with tooling details |
-| **[Gap Analysis](gap-analysis.md)** | 500+ | Consolidated gaps and missing tooling |
+| **[Cross-Language Logic Specifications](surveys/cross-language-logic-specifications.md)** | 294 | Survey of frameworks for portable logic (CEL, Rego, DMN, CWL, BPMN, etc.) |
+| **[Testable Program Specifications](surveys/testable-program-specifications.md)** | 1400+ | Comprehensive survey of testable specifications with tooling details |
+| **[Gap Analysis](surveys/gap-analysis.md)** | 500+ | Consolidated gaps and missing tooling |
 
-### Supporting Documents
+### 🎨 Design Proposals
 
-| Document | Lines | Description |
-|----------|-------|-------------|
-| **[RFC Publication Process](rfc-publication-process.md)** | 235 | RFC/I-D workflow (reference for standardization process) |
-| **[Executive Summary](executive-summary.md)** | - | High-level findings and recommendations |
-| **[References](references.md)** | - | Consolidated bibliography |
+| Document | Description |
+|----------|-------------|
+| **[Interchange Format Design](design/interchange-format-design.md)** | Requirements for behavioral specification interchange format (SMT-LIB, LLVM IR, WebAssembly analysis) |
+| **[Spec Registry Design](design/spec-registry-design.md)** | Package repository design for specifications (like npm for specs) |
+
+### 🔍 Deep Dives (Specialized Research)
+
+| Document | Description |
+|----------|-------------|
+| **[Executable Semantics Report](deep-dives/executable-semantics-report.md)** | Making Z notation, B Method, VDM executable |
+| **[Industry Adoption Case Studies](deep-dives/industry-adoption-case-studies.md)** | MongoDB/TLA+, Microsoft/Pact, Amazon/AWS, Intel/Siemens |
+| **[AI/ML Verification Landscape](deep-dives/ai-ml-verification-landscape.md)** | Neural network verification tools (Marabou, fairness, robustness) |
+| **[Cyber-Physical Systems Tools](deep-dives/cyber-physical-systems-tools.md)** | Hybrid automata tools (SpaceEx, PHAVer, dReal, KeYmaera X) |
+| **[Emerging Developments 2024-2025](deep-dives/emerging-developments-2024-2025.md)** | New tools, standards, trends |
+
+### 📚 Practical Guides
+
+| Document | Description |
+|----------|-------------|
+| **[Tool Selection Guide](guides/tool-selection-guide.md)** | Decision tree for choosing specification tools |
+| **[Layered Specifications Guide](guides/layered-specifications-guide.md)** | Implementation patterns for PBT + contracts + formal methods |
+
+### 📖 Reference (Supporting Docs)
+
+| Document | Description |
+|----------|-------------|
+| **[Executive Summary](reference/executive-summary.md)** | High-level 5-minute overview |
+| **[References](reference/references.md)** | Consolidated bibliography (170+ references) |
+| **[RFC Publication Process](reference/rfc-publication-process.md)** | RFC/I-D workflow (reference for standardization) |
 
 ---
 
@@ -39,26 +77,26 @@ This directory contains research on formal specifications for program behavior t
 ### New to Formal Specifications?
 
 Start here:
-1. **[Executive Summary](executive-summary.md)** - 5-minute overview
-2. **[Gap Analysis](gap-analysis.md)** - What's missing and why it matters
-3. **[Tool Selection Guide](tool-selection-guide.md)** - Choose the right tools
+1. **[Executive Summary](reference/executive-summary.md)** - 5-minute overview
+2. **[Gap Analysis](surveys/gap-analysis.md)** - What's missing and why it matters
+3. **[Tool Selection Guide](guides/tool-selection-guide.md)** - Choose the right tools
 
 ### Want to Get Started?
 
-1. **[Layered Specifications Guide](layered-specifications-guide.md)** - Implementation patterns
-2. **[Learning Path](learning-path.md)** - Curriculum and resources
+1. **[Layered Specifications Guide](guides/layered-specifications-guide.md)** - Implementation patterns
+2. **[Industry Case Studies](deep-dives/industry-adoption-case-studies.md)** - Learn from others' experience
 
 ### Interested in Specific Topics?
 
 | Topic | Document | Section |
 |-------|----------|---------|
-| **API Contracts** | Testable Program Specifications | Section 3.2 |
-| **Concurrent Systems** | Testable Program Specifications | Section 4.1 (TLA+) |
-| **State Machines** | Testable Program Specifications | Section 5.1 (SCXML) |
-| **Property-Based Testing** | Testable Program Specifications | Section 2 |
-| **Formal Verification** | Testable Program Specifications | Section 4 |
-| **Tooling Details** | Testable Program Specifications | Section 11 |
-| **Capability Matrices** | Testable Program Specifications | Section 12 |
+| **API Contracts** | [Testable Program Specifications](surveys/testable-program-specifications.md) | Section 3.2 |
+| **Concurrent Systems** | [Testable Program Specifications](surveys/testable-program-specifications.md) | Section 4.1 (TLA+) |
+| **State Machines** | [Testable Program Specifications](surveys/testable-program-specifications.md) | Section 5.1 (SCXML) |
+| **Property-Based Testing** | [Testable Program Specifications](surveys/testable-program-specifications.md) | Section 2 |
+| **Formal Verification** | [Testable Program Specifications](surveys/testable-program-specifications.md) | Section 4 |
+| **Tooling Details** | [Testable Program Specifications](surveys/testable-program-specifications.md) | Section 11 |
+| **Capability Matrices** | [Testable Program Specifications](surveys/testable-program-specifications.md) | Section 12 |
 
 ---
 
@@ -96,10 +134,11 @@ Start here:
 | **Tooling ecosystem analysis** | ✅ Complete |
 | **Capability analysis** | ✅ Complete |
 | **Gap identification** | ✅ Complete |
-| **Industry adoption research** | 🔄 In Progress |
-| **AI/ML verification landscape** | 🔄 In Progress |
-| **Interchange format design** | 🔄 In Progress |
-| **Practical guides** | 🔄 In Progress |
+| **Industry adoption research** | ✅ Complete |
+| **AI/ML verification landscape** | ✅ Complete |
+| **Interchange format design** | ✅ Complete |
+| **Package repository design** | ✅ Complete |
+| **Practical guides** | ✅ Complete |
 
 ---
 
@@ -143,7 +182,7 @@ This is active research. Contributions welcome:
 
 ## References
 
-See **[References](references.md)** for complete bibliography.
+See **[References](reference/references.md)** for complete bibliography.
 
 Key standards and organizations:
 - **RFC Editor**: [rfc-editor.org](https://www.rfc-editor.org/)
