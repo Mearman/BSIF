@@ -270,6 +270,22 @@ function tokenize(input: string): Token[] {
 // Parser
 //==============================================================================
 
+/**
+ * Convert a member access expression to its string representation
+ * e.g., { member: { target: { variable: "result" }, property: "toString" } } -> "result.toString"
+ */
+function exprToString(expr: ExpressionAST): string {
+	if ("variable" in expr) {
+		return expr.variable;
+	} else if ("member" in expr) {
+		return `${exprToString(expr.member.target)}.${expr.member.property}`;
+	} else if ("literal" in expr) {
+		return String(expr.literal);
+	} else {
+		throw new Error(`Cannot convert expression to string`);
+	}
+}
+
 export interface ParseError {
 	readonly message: string;
 	readonly position: number;
@@ -496,9 +512,13 @@ export class ExpressionParser {
 
 				this.expect(TokenType.RPAREN); // consume ')'
 
-				// Check if this is a method call on a variable
+				// Support calls on variables and member expressions
 				if ("variable" in expr) {
 					expr = { call: expr.variable, arguments: args };
+				} else if ("member" in expr) {
+					// Convert member access to dotted string for call
+					const memberPath = exprToString(expr);
+					expr = { call: memberPath, arguments: args };
 				} else {
 					throw new Error(`Function calls require a callable expression at position ${this.peek().position}`);
 				}
@@ -521,19 +541,8 @@ export class ExpressionParser {
 				this.consume(); // consume dot
 				const prop = this.expect(TokenType.IDENTIFIER);
 
-				// For now, convert arr[0].prop to a variable string representation
-				// This is a limitation - ideally we'd have a proper member access AST node
-				if ("access" in expr || "call" in expr) {
-					// For complex expressions, convert to string variable
-					const exprStr = JSON.stringify(expr).replace(/"/g, "");
-					expr = { variable: `${exprStr}.${prop.value}` };
-				} else if ("variable" in expr) {
-					// Simple variable.prop stays as variable string
-					expr = { variable: `${expr.variable}.${prop.value}` };
-				} else {
-					throw new Error(`Member access requires a target expression at position ${this.peek().position}`);
-				}
-
+				// Create proper member access AST node
+				expr = { member: { target: expr, property: prop.value } };
 				continue;
 			}
 
