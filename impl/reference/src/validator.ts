@@ -46,6 +46,7 @@ export interface ValidationOptions {
 	readonly checkCircularReferences?: boolean;
 	readonly resourceLimits?: ResourceLimits;
 	readonly sourceMap?: SourceMap;
+	readonly file?: string;
 }
 
 const defaultOptions: ValidationOptions = {
@@ -75,6 +76,9 @@ export function validate(document: unknown, options: ValidationOptions = default
 		if (options.sourceMap) {
 			errors = enrichErrorsWithSourceMap(errors, options.sourceMap);
 		}
+		if (options.file) {
+			errors = enrichErrorsWithFile(errors, options.file);
+		}
 		return createFailure(errors);
 	}
 
@@ -86,6 +90,9 @@ export function validate(document: unknown, options: ValidationOptions = default
 
 		if (options.sourceMap) {
 			semanticErrors = enrichErrorsWithSourceMap(semanticErrors, options.sourceMap);
+		}
+		if (options.file) {
+			semanticErrors = enrichErrorsWithFile(semanticErrors, options.file);
 		}
 
 		const hasErrors = semanticErrors.some((e) => e.severity === "error");
@@ -121,6 +128,10 @@ function enrichErrorsWithSourceMap(errors: readonly ValidationError[], sourceMap
 		const loc = resolveLocation(sourceMap, offset);
 		return { ...error, line: loc.line, column: loc.column };
 	});
+}
+
+function enrichErrorsWithFile(errors: readonly ValidationError[], file: string): readonly ValidationError[] {
+	return errors.map((error) => ({ ...error, file }));
 }
 
 //==============================================================================

@@ -20,7 +20,7 @@ export async function validateCommand(
 
 	// Parse and validate
 	const result = parseContent(content, resolvedPath);
-	const validation = validate(result, { sourceMap });
+	const validation = validate(result, { sourceMap, file: resolvedPath });
 
 	const outputFormat = options["output-format"];
 

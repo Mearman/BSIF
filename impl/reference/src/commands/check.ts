@@ -20,7 +20,7 @@ export async function checkCommand(
 
 	// Parse with semantic validation enabled
 	const result = parseContent(content, resolvedPath);
-	const validation = validate(result, { checkSemantics: true, sourceMap });
+	const validation = validate(result, { checkSemantics: true, sourceMap, file: resolvedPath });
 
 	const outputFormat = options["output-format"];
 
