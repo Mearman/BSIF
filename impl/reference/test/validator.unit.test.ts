@@ -454,6 +454,27 @@ describe("Validator", () => {
 		});
 	});
 
+	describe("document size limits", () => {
+		it("warns when document size exceeds limit", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states: [{ name: "idle" }],
+					transitions: [],
+					initial: "idle",
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true, resourceLimits: { maxDocumentSize: 10 } });
+
+			const sizeError = result.errors.find((e) => e.code === ErrorCode.ResourceLimitExceeded);
+			assert.ok(sizeError, "Should have ResourceLimitExceeded warning");
+			assert.strictEqual(sizeError.severity, "warning");
+			assert.match(sizeError.message, /bytes/);
+		});
+	});
+
 	describe("general validation", () => {
 		it("warns when state count exceeds resource limit", () => {
 			const states = Array.from({ length: 5 }, (_, i) => ({ name: `s${i}` }));

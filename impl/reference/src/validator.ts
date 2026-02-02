@@ -36,6 +36,7 @@ import {
 export interface ResourceLimits {
 	readonly maxNestingDepth?: number;
 	readonly maxStateCount?: number;
+	readonly maxDocumentSize?: number;
 }
 
 export interface ValidationOptions {
@@ -912,12 +913,26 @@ function validateCompositionReferences(doc: BSIFDocument): readonly ValidationEr
 
 const DEFAULT_MAX_NESTING_DEPTH = 32;
 const DEFAULT_MAX_STATE_COUNT = 1000;
+const DEFAULT_MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
 
 function validateResourceLimits(doc: BSIFDocument, limits?: ResourceLimits): readonly ValidationError[] {
 	const errors: ValidationError[] = [];
 
 	const maxNestingDepth = limits?.maxNestingDepth ?? DEFAULT_MAX_NESTING_DEPTH;
 	const maxStateCount = limits?.maxStateCount ?? DEFAULT_MAX_STATE_COUNT;
+	const maxDocumentSize = limits?.maxDocumentSize ?? DEFAULT_MAX_DOCUMENT_SIZE;
+
+	// Check document size
+	const docSize = JSON.stringify(doc).length;
+	if (docSize > maxDocumentSize) {
+		errors.push(
+			createError(
+				ErrorCode.ResourceLimitExceeded,
+				`Document size ${docSize} bytes exceeds maximum of ${maxDocumentSize} bytes`,
+				{ severity: "warning" },
+			),
+		);
+	}
 
 	// Check state count
 	if (isStateMachine(doc.semantics) && doc.semantics.states.length > maxStateCount) {
