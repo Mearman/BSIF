@@ -223,6 +223,10 @@ export const constraints = z.object({
 
 export type Constraints = z.infer<typeof constraints>;
 
+export function isConstraint(value: unknown): value is Constraint {
+	return constraint.safeParse(value).success;
+}
+
 export function isConstraints(value: unknown): value is Constraints {
 	return constraints.safeParse(value).success;
 }
@@ -270,6 +274,10 @@ export const events = z.object({
 
 export type Events = z.infer<typeof events>;
 
+export function isHandler(value: unknown): value is Handler {
+	return handler.safeParse(value).success;
+}
+
 export function isEvents(value: unknown): value is Events {
 	return events.safeParse(value).success;
 }
@@ -303,6 +311,14 @@ export const interaction = z.object({
 });
 
 export type Interaction = z.infer<typeof interaction>;
+
+export function isParticipant(value: unknown): value is Participant {
+	return participant.safeParse(value).success;
+}
+
+export function isMessage(value: unknown): value is MessageSequence {
+	return messageSequence.safeParse(value).success;
+}
 
 export function isInteraction(value: unknown): value is Interaction {
 	return interaction.safeParse(value).success;

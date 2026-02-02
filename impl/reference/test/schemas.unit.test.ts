@@ -13,6 +13,11 @@ import {
 	timingConstraint,
 	isBSIFMetadata,
 	isStateMachine,
+	isTransition,
+	isConstraint,
+	isHandler,
+	isParticipant,
+	isMessage,
 } from "../src/schemas.js";
 
 describe("Schemas", () => {
@@ -252,6 +257,33 @@ describe("Schemas", () => {
 			};
 
 			assert.strictEqual(hybrid.safeParse(invalid).success, false);
+		});
+	});
+
+	describe("additional type guards", () => {
+		it("isTransition validates correctly", () => {
+			assert.strictEqual(isTransition({ from: "a", to: "b" }), true);
+			assert.strictEqual(isTransition({ from: "" }), false);
+		});
+
+		it("isConstraint validates correctly", () => {
+			assert.strictEqual(isConstraint({ description: "test", expression: "x > 0" }), true);
+			assert.strictEqual(isConstraint({ description: "" }), false);
+		});
+
+		it("isHandler validates correctly", () => {
+			assert.strictEqual(isHandler({ event: "click" }), true);
+			assert.strictEqual(isHandler({}), false);
+		});
+
+		it("isParticipant validates correctly", () => {
+			assert.strictEqual(isParticipant({ name: "client" }), true);
+			assert.strictEqual(isParticipant({}), false);
+		});
+
+		it("isMessage validates correctly", () => {
+			assert.strictEqual(isMessage({ from: "a", to: "b", message: "req" }), true);
+			assert.strictEqual(isMessage({ from: "a" }), false);
 		});
 	});
 });
