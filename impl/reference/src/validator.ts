@@ -358,8 +358,9 @@ function validateExpressionSyntax(expression: string, context: string): readonly
 		);
 	}
 
-	// Check for obviously invalid patterns (consecutive operators)
-	if (/[*+=]{2,}/.test(expression)) {
+	// Check for obviously invalid patterns (consecutive operators, excluding == and !=)
+	const normalized = expression.replace(/[!=]=|[<>]=/g, " ");
+	if (/[*+=]{2,}/.test(normalized)) {
 		errors.push(
 			createError(
 				ErrorCode.InvalidExpression,
