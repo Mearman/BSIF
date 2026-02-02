@@ -20,7 +20,7 @@
     "generate-schema": "tsx scripts/generate-json-schema.ts",
     "lint": "eslint --cache . && tsc --noEmit",
     "lint:fix": "eslint . --fix",
-    "test": "tsx --test test/**/*.unit.test.ts test/**/*.integration.test.ts",
+    "test": "tsx --test test/**/*.unit.test.ts test/**/*.integration.test.ts test/examples/**/*.contract.test.ts",
     "test:coverage": "c8 tsx --test test/**/*.unit.test.ts test/**/*.integration.test.ts",
     "test:types": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
