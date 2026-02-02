@@ -74,7 +74,7 @@ describe("CLI Integration Tests", () => {
 	});
 
 	describe("format command", () => {
-		it("formats a BSIF document", async () => {
+		it("formats a JSON BSIF document", async () => {
 			const testFile = join(tempDir, "format-test.bsif.json");
 			await writeFile(
 				testFile,
@@ -93,6 +93,53 @@ describe("CLI Integration Tests", () => {
 			assert.strictEqual(result.exitCode, 0);
 			// Verify formatted output is valid JSON
 			assert.doesNotThrow(() => JSON.parse(result.stdout));
+
+			await rm(testFile);
+		});
+
+		it("formats a YAML BSIF document", async () => {
+			const testFile = join(tempDir, "format-test.bsif.yaml");
+			await writeFile(testFile, `
+metadata:
+  bsif_version: "1.0.0"
+  name: test
+semantics:
+  type: state-machine
+  states:
+    - name: idle
+  transitions: []
+  initial: idle
+`);
+
+			const result = await runCli(`format ${testFile}`);
+
+			assert.strictEqual(result.exitCode, 0);
+			// YAML output should contain YAML-style content
+			assert.match(result.stdout, /bsif_version:/);
+
+			await rm(testFile);
+		});
+
+		it("forces YAML output with --format=yaml", async () => {
+			const testFile = join(tempDir, "format-force.bsif.json");
+			await writeFile(
+				testFile,
+				JSON.stringify(
+					{
+						metadata: { bsif_version: "1.0.0", name: "test" },
+						semantics: { type: "state-machine", states: [{ name: "idle" }], transitions: [], initial: "idle" },
+					},
+					null,
+					2,
+				),
+			);
+
+			const result = await runCli(`format --format=yaml ${testFile}`);
+
+			assert.strictEqual(result.exitCode, 0);
+			// Should be YAML, not JSON (no opening brace)
+			assert.ok(!result.stdout.trim().startsWith("{"), "Output should be YAML, not JSON");
+			assert.match(result.stdout, /bsif_version:/);
 
 			await rm(testFile);
 		});

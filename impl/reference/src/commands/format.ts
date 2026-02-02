@@ -1,21 +1,35 @@
 // BSIF Reference Implementation - Format Command
-// Formats BSIF document (pretty-print JSON)
+// Formats BSIF document (pretty-print JSON or YAML)
 
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { parseContent } from "../parser.js";
+import { stringify as yamlStringify } from "yaml";
 
 export async function formatCommand(
 	filePath: string,
 	options: Record<string, unknown>,
 ): Promise<number> {
 	const { write = false } = options;
+	const format = typeof options.format === "string" ? options.format : undefined;
 
 	// Resolve file path
 	const resolvedPath = resolve(filePath);
 
-	// Read and parse file
+	// Read file
 	const content = await readFile(resolvedPath, "utf-8");
-	const formatted = JSON.stringify(JSON.parse(content), null, 2);
+
+	// Detect input format from extension
+	const inputFormat = detectFormat(filePath);
+
+	// Determine output format: explicit --format, or same as input
+	const outputFormat = format === "json" || format === "yaml" ? format : inputFormat;
+
+	// Parse and re-format
+	const doc = parseContent(content, filePath);
+	const formatted = outputFormat === "yaml"
+		? yamlStringify(doc).trimEnd()
+		: JSON.stringify(doc, null, 2);
 
 	// Output formatted content
 	if (write) {
@@ -26,4 +40,9 @@ export async function formatCommand(
 	}
 
 	return 0;
+}
+
+function detectFormat(filePath: string): "json" | "yaml" {
+	if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) return "yaml";
+	return "json";
 }
