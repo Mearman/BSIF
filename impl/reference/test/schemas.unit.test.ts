@@ -10,6 +10,7 @@ import {
 	events,
 	interaction,
 	hybrid,
+	timingConstraint,
 	isBSIFMetadata,
 	isStateMachine,
 } from "../src/schemas.js";
@@ -110,6 +111,23 @@ describe("Schemas", () => {
 			} else {
 				assert.fail("Should be a state machine");
 			}
+		});
+	});
+
+	describe("timingConstraint", () => {
+		it("accepts valid timing constraint", () => {
+			const valid = { deadline: 500, unit: "ms" as const };
+			assert.strictEqual(timingConstraint.safeParse(valid).success, true);
+		});
+
+		it("rejects negative values", () => {
+			const invalid = { deadline: -1 };
+			assert.strictEqual(timingConstraint.safeParse(invalid).success, false);
+		});
+
+		it("rejects invalid unit", () => {
+			const invalid = { deadline: 100, unit: "hours" };
+			assert.strictEqual(timingConstraint.safeParse(invalid).success, false);
 		});
 	});
 

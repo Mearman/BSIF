@@ -26,6 +26,24 @@ export function isBSIFMetadata(value: unknown): value is BSIFMetadata {
 }
 
 //==============================================================================
+// Timing Constraint Schemas
+//==============================================================================
+
+export const timingConstraint = z.object({
+	deadline: z.number().positive().optional(),
+	timeout: z.number().positive().optional(),
+	period: z.number().positive().optional(),
+	unit: z.union([
+		z.literal("ms"),
+		z.literal("s"),
+		z.literal("us"),
+		z.literal("ns"),
+	]).optional(),
+});
+
+export type TimingConstraint = z.infer<typeof timingConstraint>;
+
+//==============================================================================
 // State Machine Schemas
 //==============================================================================
 
@@ -35,6 +53,7 @@ export const state = z.object({
 	exit: z.string().max(4096).optional(),
 	parent: z.string().optional(),
 	parallel: z.boolean().optional(),
+	timing: timingConstraint.optional(),
 });
 
 export type State = z.infer<typeof state>;
@@ -49,6 +68,7 @@ export const transition = z.object({
 	event: z.string().optional(),
 	guard: z.string().max(4096).optional(),
 	action: z.string().max(4096).optional(),
+	timing: timingConstraint.optional(),
 });
 
 export type Transition = z.infer<typeof transition>;

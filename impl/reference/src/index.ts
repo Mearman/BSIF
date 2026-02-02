@@ -7,6 +7,8 @@
 export type {
 	// Metadata
 	BSIFMetadata as Metadata,
+	// Timing
+	TimingConstraint,
 	// State Machine
 	StateMachine,
 	State,
@@ -62,6 +64,7 @@ export { createError, createSuccess, createFailure, formatError, formatErrors } 
 export {
 	bsifMetadata,
 	bsifDocument,
+	timingConstraint,
 	state,
 	stateMachine,
 	temporal,
