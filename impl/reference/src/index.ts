@@ -142,6 +142,10 @@ export {
 export { parseFile, parseFileSync, parseFileString, parseContent, parseContentWithSourceMap, parseFileIncremental, suggestCorrection, buildSourceMap, resolveLocation, findPathOffset } from "./parser.js";
 export type { ParseOptions, ParseLimits, IncrementalParseOptions, SourceMap } from "./parser.js";
 
+export { parseExpression, tryParseExpression, isValidExpression } from "./parser/expression-parser.js";
+export { ExpressionParser, ParseError } from "./parser/expression-parser.js";
+export type { ParseError as ExpressionParseError } from "./parser/expression-parser.js";
+
 //==============================================================================
 // Validator
 //==============================================================================
@@ -175,6 +179,8 @@ export type { GenerateOptions, GeneratedTestSuite, TestGenerator } from "./gener
 //==============================================================================
 
 export { main as cliMain } from "./cli.js";
+export { convertExprCommand, printConvertExprHelp } from "./commands/convert-expr.js";
+export type { ConvertExprOptions } from "./commands/convert-expr.js";
 
 //==============================================================================
 // Executors

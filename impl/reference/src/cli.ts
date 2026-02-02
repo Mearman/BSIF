@@ -14,6 +14,7 @@ import { generateCommand } from "./commands/generate.js";
 import { registryPublishCommand, registryFetchCommand, registrySearchCommand } from "./commands/registry.js";
 import { migrateCommand } from "./commands/migrate.js";
 import { importCommand } from "./commands/import.js";
+import { convertExprCommand } from "./commands/convert-expr.js";
 
 //==============================================================================
 // CLI Types
@@ -98,6 +99,8 @@ async function main(args: string[]): Promise<number> {
 			return await migrateCommand(filePath, values);
 		case "import":
 			return await importCommand(filePath, values);
+		case "convert-expr":
+			return await convertExprCommand(filePath, values);
 		default:
 			console.error(`Unknown command: ${command}`);
 			printHelp();
@@ -131,6 +134,10 @@ function parseCliArgs(args: string[]): ParsedArgs {
 			"dry-run": { type: "boolean" },
 			"target-version": { type: "string" },
 			name: { type: "string" },
+			"convert-expr": { type: "boolean" },
+			fields: { type: "string" },
+			"in-place": { type: "boolean", short: "i" },
+			"keep-failed": { type: "boolean" },
 		},
 		allowPositionals: true,
 	});
@@ -175,6 +182,7 @@ Commands:
   check <file>           Validate BSIF document semantics
   format <file>          Format BSIF document
   convert <input>        Convert between JSON and YAML formats
+  convert-expr <file>    Convert string expressions to AST format
   resolve <file>         Resolve references and print dependency graph
   compose <f1> <f2> ...  Compose multiple BSIF documents into a hybrid
   lint <file>            Run opinionated style checks
