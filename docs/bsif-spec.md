@@ -1,8 +1,8 @@
 # BSIF: Behavioral Specification Interchange Format
 
-**Status:** Draft Specification
-**Version:** 1.0.0-draft
-**Date:** 2025-02-01
+**Status:** Specification
+**Version:** 1.0.0
+**Date:** 2025-02-02
 **Format:** JSON (primary), YAML (alternative)
 
 ---
@@ -1453,7 +1453,7 @@ Implementations **MUST** pass all required tests to claim conformance.
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0-draft | 2025-02-01 | Initial draft specification |
+| 1.0.0 | 2025-02-02 | Initial specification |
 
 ---
 

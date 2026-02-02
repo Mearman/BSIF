@@ -1,7 +1,8 @@
 # BSIF: Behavioral Specification Interchange Format
 
-**Status:** Research & Design Phase
-**Started:** 2025
+**Status:** v1.0.0
+**Version:** 1.0.0
+**Date:** 2025-02-02
 **Topic:** Universal format for language-agnostic program behavior specifications
 
 ---
@@ -129,7 +130,7 @@ Write your behavioral specification once, verify it against any implementation.
 
 ### Specification
 
-- **[BSIF Specification (v1.0.0-draft)](docs/bsif-spec.md)** — Complete formal specification with syntax, semantics, and conformance requirements
+- **[BSIF Specification (v1.0.0)](docs/bsif-spec.md)** — Complete formal specification with syntax, semantics, and conformance requirements
 - **[Formal Grammar (EBNF)](docs/grammar/bsif.ebnf)** — Machine-parseable grammar for BSIF
 - **[JSON Schema](docs/schemas/bsif.json)** — Schema validation for BSIF documents
 - **[Security Considerations](docs/security.md)** — Security analysis and mitigation strategies
