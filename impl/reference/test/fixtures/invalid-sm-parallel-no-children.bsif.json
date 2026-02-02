@@ -1,0 +1,17 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-parallel-no-children"
+	},
+	"semantics": {
+		"initial": "idle",
+		"states": [
+			{ "name": "idle" },
+			{ "name": "parallel-no-kids", "parallel": true }
+		],
+		"transitions": [
+			{ "from": "idle", "to": "parallel-no-kids" }
+		],
+		"type": "state-machine"
+	}
+}

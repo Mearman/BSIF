@@ -1,0 +1,19 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-parallel"
+	},
+	"semantics": {
+		"initial": "idle",
+		"states": [
+			{ "name": "idle" },
+			{ "name": "processing", "parallel": true },
+			{ "name": "reading", "parent": "processing" },
+			{ "name": "writing", "parent": "processing" }
+		],
+		"transitions": [
+			{ "from": "idle", "to": "processing" }
+		],
+		"type": "state-machine"
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-timing"
+	},
+	"semantics": {
+		"initial": "idle",
+		"states": [
+			{ "name": "idle" },
+			{ "name": "active", "timing": { "period": 100, "unit": "ms" } }
+		],
+		"transitions": [
+			{
+				"from": "idle",
+				"timing": { "deadline": 500, "unit": "ms" },
+				"to": "active"
+			}
+		],
+		"type": "state-machine"
+	}
+}

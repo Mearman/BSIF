@@ -226,6 +226,39 @@ function validateStateMachine(sm: StateMachine): readonly ValidationError[] {
 		}
 	}
 
+	// Parallel state validation: parallel states must have children
+	for (const state of sm.states) {
+		if (state.parallel) {
+			const hasChildren = sm.states.some((s) => s.parent === state.name);
+			if (!hasChildren) {
+				errors.push(
+					createError(
+						ErrorCode.ParallelStateNoChildren,
+						`Parallel state "${state.name}" has no child states`,
+						{ severity: "warning", path: ["states", state.name], suggestion: "Add child states or remove the parallel flag" },
+					),
+				);
+			}
+		}
+	}
+
+	// Timing constraint validation
+	for (const t of sm.transitions) {
+		if (t.timing) {
+			const timing = t.timing;
+			if (timing.deadline !== undefined && timing.timeout !== undefined &&
+				timing.deadline < timing.timeout) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidTimingConstraint,
+						`Transition ${t.from} -> ${t.to}: deadline (${timing.deadline}) is less than timeout (${timing.timeout})`,
+						{ severity: "warning", path: ["transitions", t.from, "timing"] },
+					),
+				);
+			}
+		}
+	}
+
 	// Deadlock detection: non-final states with no outgoing transitions
 	if (sm.final) {
 		const finalStates = new Set(sm.final);

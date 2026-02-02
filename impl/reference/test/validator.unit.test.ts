@@ -368,4 +368,41 @@ describe("Validator", () => {
 			assert.strictEqual(limitError.severity, "warning");
 		});
 	});
+
+	describe("parallel state validation", () => {
+		it("accepts valid parallel states with children", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "valid-sm-parallel.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const parallelError = result.errors.find((e) => e.code === ErrorCode.ParallelStateNoChildren);
+			assert.strictEqual(parallelError, undefined, "Should not have ParallelStateNoChildren error");
+		});
+
+		it("warns about parallel state with no children", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-parallel-no-children.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const parallelError = result.errors.find((e) => e.code === ErrorCode.ParallelStateNoChildren);
+			assert.ok(parallelError, "Should have ParallelStateNoChildren warning");
+			assert.strictEqual(parallelError.severity, "warning");
+		});
+	});
+
+	describe("timing constraints", () => {
+		it("accepts valid timing constraints", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "valid-sm-timing.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			assert.strictEqual(result.valid, true);
+		});
+	});
 });
