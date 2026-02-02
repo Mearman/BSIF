@@ -647,6 +647,77 @@ describe("Validator", () => {
 		});
 	});
 
+	describe("concurrency validation", () => {
+		it("accepts parallel state with independent regions", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "valid-sm-parallel-regions.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const crossError = result.errors.find((e) => e.code === ErrorCode.ParallelRegionTransition);
+			assert.strictEqual(crossError, undefined, "Should not have cross-region warning");
+		});
+
+		it("warns about transitions between parallel regions", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-parallel-cross-region.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const crossError = result.errors.find((e) => e.code === ErrorCode.ParallelRegionTransition);
+			assert.ok(crossError, "Should have ParallelRegionTransition warning");
+			assert.strictEqual(crossError.severity, "warning");
+			assert.match(crossError.message, /crosses parallel regions/);
+		});
+
+		it("warns about nested parallel states", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-nested-parallel.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const nestedError = result.errors.find((e) => e.code === ErrorCode.NestedParallelState);
+			assert.ok(nestedError, "Should have NestedParallelState warning");
+			assert.strictEqual(nestedError.severity, "warning");
+		});
+
+		it("rejects state with non-existent parent reference", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-parent-not-found.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const parentError = result.errors.find(
+				(e) => e.code === ErrorCode.StateNotFound && e.message.includes("parent"),
+			);
+			assert.ok(parentError, "Should have StateNotFound error for non-existent parent");
+		});
+
+		it("handles parallel state with single child region", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states: [
+						{ name: "main", parallel: true },
+						{ name: "only_region", parent: "main" },
+					],
+					transitions: [],
+					initial: "main",
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const crossError = result.errors.find((e) => e.code === ErrorCode.ParallelRegionTransition);
+			assert.strictEqual(crossError, undefined, "Single region should not cause cross-region error");
+		});
+	});
+
 	describe("circular parent references", () => {
 		it("detects circular parent references", async () => {
 			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-circular-parent.bsif.json");
