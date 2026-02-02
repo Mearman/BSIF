@@ -3,17 +3,16 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { BSIFDocument, Expression, ExpressionAST } from "../schemas.js";
-import { isStringExpression, isASTExpression } from "../schemas.js";
-import { parseExpression, tryParseExpression } from "../parser/expression-parser.js";
+import type { BSIFDocument, Expression } from "../schemas.js";
+import { tryParseExpression } from "../parser/expression-parser.js";
 
 //==============================================================================
 // Options
 //==============================================================================
 
 export interface ConvertExprOptions {
-	readonly fields?: readonly ("guard" | "action" | "entry" | "exit")[];
-	readonly inplace?: boolean;
+	readonly fields?: string | readonly ("guard" | "action" | "entry" | "exit")[];
+	readonly inplace?: boolean | string;
 	readonly output?: string;
 	readonly keepFailed?: boolean; // Keep strings that fail to parse
 }
@@ -21,56 +20,6 @@ export interface ConvertExprOptions {
 //==============================================================================
 // Conversion
 //==============================================================================
-
-/**
- * Recursively convert string expressions to AST in an object
- */
-function convertInObject(obj: unknown, fields: Set<string>, keepFailed: boolean): unknown {
-	if (obj === null || typeof obj !== "object") {
-		return obj;
-	}
-
-	if (Array.isArray(obj)) {
-		return obj.map(item => convertInObject(item, fields, keepFailed));
-	}
-
-	const result: Record<string, unknown> = {};
-
-	for (const [key, value] of Object.entries(obj)) {
-		// Check if this is an expression field we should convert
-		if (fields.has(key)) {
-			result[key] = convertExpression(value, keepFailed);
-		} else {
-			result[key] = convertInObject(value, fields, keepFailed);
-		}
-	}
-
-	return result;
-}
-
-/**
- * Convert a single expression value to AST if it's a string
- */
-function convertExpression(value: unknown, keepFailed: boolean): Expression {
-	// Already AST or non-string, return as-is
-	if (typeof value !== "string") {
-		return value as Expression;
-	}
-
-	// Try to parse the string expression
-	const ast = tryParseExpression(value);
-
-	if (ast) {
-		return ast;
-	}
-
-	// Parse failed
-	if (keepFailed) {
-		return value; // Keep original string
-	}
-
-	throw new Error(`Failed to parse expression: "${value}"`);
-}
 
 /**
  * Count expressions converted
