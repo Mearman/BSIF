@@ -19,6 +19,8 @@ import {
 	type ValidationError,
 	type ValidationResult,
 } from "./errors.js";
+import type { SourceMap } from "./parser.js";
+import { resolveLocation, findPathOffset } from "./parser.js";
 import {
 	bsifDocument,
 	isStateMachine,
@@ -43,6 +45,7 @@ export interface ValidationOptions {
 	readonly checkSemantics?: boolean;
 	readonly checkCircularReferences?: boolean;
 	readonly resourceLimits?: ResourceLimits;
+	readonly sourceMap?: SourceMap;
 }
 
 const defaultOptions: ValidationOptions = {
@@ -59,7 +62,7 @@ export function validate(document: unknown, options: ValidationOptions = default
 	const schemaResult = bsifDocument.safeParse(document);
 
 	if (!schemaResult.success) {
-		const errors = schemaResult.error.issues.map((err) =>
+		let errors: readonly ValidationError[] = schemaResult.error.issues.map((err) =>
 			createError(
 				ErrorCode.InvalidFieldValue,
 				err.message,
@@ -69,6 +72,9 @@ export function validate(document: unknown, options: ValidationOptions = default
 				},
 			),
 		);
+		if (options.sourceMap) {
+			errors = enrichErrorsWithSourceMap(errors, options.sourceMap);
+		}
 		return createFailure(errors);
 	}
 
@@ -76,10 +82,19 @@ export function validate(document: unknown, options: ValidationOptions = default
 
 	// Stage 2: Semantic validation
 	if (options.checkSemantics) {
-		const semanticErrors = validateSemantics(doc, options.resourceLimits);
+		let semanticErrors = validateSemantics(doc, options.resourceLimits);
 
-		if (semanticErrors.length > 0) {
+		if (options.sourceMap) {
+			semanticErrors = enrichErrorsWithSourceMap(semanticErrors, options.sourceMap);
+		}
+
+		const hasErrors = semanticErrors.some((e) => e.severity === "error");
+		if (hasErrors) {
 			return createFailure(semanticErrors);
+		}
+		if (semanticErrors.length > 0) {
+			// Warnings only — document is valid but has warnings
+			return { valid: true, errors: semanticErrors };
 		}
 	}
 
@@ -92,6 +107,20 @@ export async function validateFile(
 ): Promise<ValidationResult> {
 	const doc = await (await import("./parser.js")).parseFile(path);
 	return validate(doc, options);
+}
+
+//==============================================================================
+// Source Map Enrichment
+//==============================================================================
+
+function enrichErrorsWithSourceMap(errors: readonly ValidationError[], sourceMap: SourceMap): readonly ValidationError[] {
+	return errors.map((error) => {
+		if (error.line !== undefined || !error.path || error.path.length === 0) return error;
+		const offset = findPathOffset(sourceMap, error.path);
+		if (offset === undefined) return error;
+		const loc = resolveLocation(sourceMap, offset);
+		return { ...error, line: loc.line, column: loc.column };
+	});
 }
 
 //==============================================================================
@@ -210,6 +239,32 @@ function validateStateMachine(sm: StateMachine): readonly ValidationError[] {
 				if (transition.from === current && !reachable.has(transition.to)) {
 					reachable.add(transition.to);
 					queue.push(transition.to);
+				}
+			}
+		}
+
+		// Parent states are reachable if any of their children are reachable
+		let changed = true;
+		while (changed) {
+			changed = false;
+			for (const state of sm.states) {
+				if (!reachable.has(state.name) && state.parent === undefined) {
+					// Check if this state is a parent of any reachable state
+					const hasReachableChild = sm.states.some((s) => s.parent === state.name && reachable.has(s.name));
+					if (hasReachableChild) {
+						reachable.add(state.name);
+						changed = true;
+					}
+				} else if (!reachable.has(state.name) && state.parent !== undefined) {
+					// Also propagate: if a child is reachable, parent is reachable
+					// (handled by checking all non-reachable states with parents)
+				}
+			}
+			// Also: if a child is reachable, mark its parent chain as reachable
+			for (const state of sm.states) {
+				if (reachable.has(state.name) && state.parent && !reachable.has(state.parent)) {
+					reachable.add(state.parent);
+					changed = true;
 				}
 			}
 		}
