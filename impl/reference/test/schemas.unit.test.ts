@@ -5,6 +5,11 @@ import assert from "node:assert";
 import {
 	bsifMetadata,
 	stateMachine,
+	temporal,
+	constraints,
+	events,
+	interaction,
+	hybrid,
 	isBSIFMetadata,
 	isStateMachine,
 } from "../src/schemas.js";
@@ -105,6 +110,130 @@ describe("Schemas", () => {
 			} else {
 				assert.fail("Should be a state machine");
 			}
+		});
+	});
+
+	describe("temporal", () => {
+		it("accepts valid temporal semantics", () => {
+			const valid = {
+				type: "temporal" as const,
+				logic: "ltl" as const,
+				variables: { p: "boolean" as const },
+				properties: [{ name: "test", formula: { operator: "variable", variable: "p" } }],
+			};
+
+			assert.strictEqual(temporal.safeParse(valid).success, true);
+		});
+
+		it("rejects missing properties array", () => {
+			const invalid = {
+				type: "temporal" as const,
+				logic: "ltl" as const,
+				variables: { p: "boolean" as const },
+			};
+
+			assert.strictEqual(temporal.safeParse(invalid).success, false);
+		});
+
+		it("rejects invalid logic value", () => {
+			const invalid = {
+				type: "temporal" as const,
+				logic: "invalid",
+				variables: { p: "boolean" as const },
+				properties: [{ name: "test", formula: { operator: "variable", variable: "p" } }],
+			};
+
+			assert.strictEqual(temporal.safeParse(invalid).success, false);
+		});
+	});
+
+	describe("constraints", () => {
+		it("accepts valid constraints semantics", () => {
+			const valid = {
+				type: "constraints" as const,
+				target: { function: "push" },
+				preconditions: [{ description: "not full", expression: "size < capacity" }],
+				postconditions: [{ description: "size increases", expression: "size == old.size + 1" }],
+			};
+
+			assert.strictEqual(constraints.safeParse(valid).success, true);
+		});
+
+		it("rejects empty target", () => {
+			const invalid = {
+				type: "constraints" as const,
+				target: {},
+				preconditions: [],
+				postconditions: [],
+			};
+
+			assert.strictEqual(constraints.safeParse(invalid).success, false);
+		});
+	});
+
+	describe("events", () => {
+		it("accepts valid events semantics", () => {
+			const valid = {
+				type: "events" as const,
+				events: { click: { payload: "string" as const } },
+				handlers: [{ event: "click", action: "handle()" }],
+			};
+
+			assert.strictEqual(events.safeParse(valid).success, true);
+		});
+
+		it("rejects missing events field", () => {
+			const invalid = {
+				type: "events" as const,
+				handlers: [],
+			};
+
+			assert.strictEqual(events.safeParse(invalid).success, false);
+		});
+	});
+
+	describe("interaction", () => {
+		it("accepts valid interaction semantics", () => {
+			const valid = {
+				type: "interaction" as const,
+				participants: [{ name: "client" }, { name: "server" }],
+				messages: [{ from: "client", to: "server", message: "request" }],
+			};
+
+			assert.strictEqual(interaction.safeParse(valid).success, true);
+		});
+
+		it("rejects empty participants array", () => {
+			const invalid = {
+				type: "interaction" as const,
+				participants: [],
+				messages: [],
+			};
+
+			assert.strictEqual(interaction.safeParse(invalid).success, false);
+		});
+	});
+
+	describe("hybrid", () => {
+		it("accepts valid hybrid with 2+ components", () => {
+			const valid = {
+				type: "hybrid" as const,
+				components: [
+					{ type: "state-machine", states: [{ name: "a" }], transitions: [], initial: "a" },
+					{ type: "state-machine", states: [{ name: "b" }], transitions: [], initial: "b" },
+				],
+			};
+
+			assert.strictEqual(hybrid.safeParse(valid).success, true);
+		});
+
+		it("rejects hybrid with fewer than 2 components", () => {
+			const invalid = {
+				type: "hybrid" as const,
+				components: [{ type: "state-machine", states: [{ name: "a" }], transitions: [], initial: "a" }],
+			};
+
+			assert.strictEqual(hybrid.safeParse(invalid).success, false);
 		});
 	});
 });
