@@ -88,6 +88,14 @@ function createExpressionSchemas() {
 		}),
 	});
 
+	// Member/property access via dot: { member: { target, property } }
+	const expressionMember = z.object({
+		member: z.object({
+			target: z.lazy(() => expressionAST),
+			property: z.string(),
+		}),
+	});
+
 	// Statement sequence: { sequence: [stmt1, stmt2, ...] }
 	const expressionSequence = z.object({
 		sequence: z.array(z.lazy(() => expressionAST)).min(1),
@@ -101,17 +109,18 @@ function createExpressionSchemas() {
 		expressionUnary,
 		expressionCall,
 		expressionAccess,
+		expressionMember,
 		expressionSequence,
 	]);
 
-	return { expressionLiteral, expressionVariable, expressionBinary, expressionUnary, expressionCall, expressionAccess, expressionSequence, expressionAST };
+	return { expressionLiteral, expressionVariable, expressionBinary, expressionUnary, expressionCall, expressionAccess, expressionMember, expressionSequence, expressionAST };
 }
 
 // Extract schemas from helper
-const { expressionLiteral, expressionVariable, expressionBinary, expressionUnary, expressionCall, expressionAccess, expressionSequence, expressionAST } = createExpressionSchemas();
+const { expressionLiteral, expressionVariable, expressionBinary, expressionUnary, expressionCall, expressionAccess, expressionMember, expressionSequence, expressionAST } = createExpressionSchemas();
 
 // Export schemas
-export { expressionLiteral, expressionVariable, expressionBinary, expressionUnary, expressionCall, expressionAccess, expressionSequence, expressionAST };
+export { expressionLiteral, expressionVariable, expressionBinary, expressionUnary, expressionCall, expressionAccess, expressionMember, expressionSequence, expressionAST };
 
 // Export types
 export type ExpressionLiteral = z.infer<typeof expressionLiteral>;
@@ -120,6 +129,7 @@ export type ExpressionBinary = z.infer<typeof expressionBinary>;
 export type ExpressionUnary = z.infer<typeof expressionUnary>;
 export type ExpressionCall = z.infer<typeof expressionCall>;
 export type ExpressionAccess = z.infer<typeof expressionAccess>;
+export type ExpressionMember = z.infer<typeof expressionMember>;
 export type ExpressionSequence = z.infer<typeof expressionSequence>;
 export type ExpressionAST = z.infer<typeof expressionAST>;
 
