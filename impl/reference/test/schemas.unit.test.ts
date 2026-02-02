@@ -18,6 +18,11 @@ import {
 	isHandler,
 	isParticipant,
 	isMessage,
+	arrayType,
+	enumType,
+	typeDefinition,
+	isArrayType,
+	isEnumType,
 } from "../src/schemas.js";
 
 describe("Schemas", () => {
@@ -257,6 +262,54 @@ describe("Schemas", () => {
 			};
 
 			assert.strictEqual(hybrid.safeParse(invalid).success, false);
+		});
+	});
+
+	describe("arrayType", () => {
+		it("accepts valid array type definitions", () => {
+			assert.strictEqual(arrayType.safeParse({ type: "array", items: "string" }).success, true);
+			assert.strictEqual(arrayType.safeParse({ type: "array", items: "integer" }).success, true);
+			assert.strictEqual(arrayType.safeParse({ type: "array", items: { type: "array", items: "boolean" } }).success, true);
+		});
+
+		it("rejects invalid array type definitions", () => {
+			assert.strictEqual(arrayType.safeParse({ type: "array" }).success, false);
+			assert.strictEqual(arrayType.safeParse({ type: "array", items: 42 }).success, false);
+		});
+	});
+
+	describe("enumType", () => {
+		it("accepts valid enum type definitions", () => {
+			assert.strictEqual(enumType.safeParse({ type: "enum", values: ["a", "b"] }).success, true);
+			assert.strictEqual(enumType.safeParse({ type: "enum", values: [1, 2, 3] }).success, true);
+			assert.strictEqual(enumType.safeParse({ type: "enum", values: [true, false] }).success, true);
+		});
+
+		it("rejects invalid enum type definitions", () => {
+			assert.strictEqual(enumType.safeParse({ type: "enum", values: [] }).success, false);
+			assert.strictEqual(enumType.safeParse({ type: "enum" }).success, false);
+		});
+	});
+
+	describe("typeDefinition", () => {
+		it("accepts array and enum types", () => {
+			assert.strictEqual(typeDefinition.safeParse({ type: "array", items: "string" }).success, true);
+			assert.strictEqual(typeDefinition.safeParse({ type: "enum", values: ["x"] }).success, true);
+			assert.strictEqual(typeDefinition.safeParse({ type: "object", properties: { x: "string" } }).success, true);
+		});
+	});
+
+	describe("isArrayType and isEnumType type guards", () => {
+		it("isArrayType validates correctly", () => {
+			assert.strictEqual(isArrayType({ type: "array", items: "string" }), true);
+			assert.strictEqual(isArrayType({ type: "object", properties: {} }), false);
+			assert.strictEqual(isArrayType("string"), false);
+		});
+
+		it("isEnumType validates correctly", () => {
+			assert.strictEqual(isEnumType({ type: "enum", values: ["a"] }), true);
+			assert.strictEqual(isEnumType({ type: "array", items: "string" }), false);
+			assert.strictEqual(isEnumType("boolean"), false);
 		});
 	});
 
