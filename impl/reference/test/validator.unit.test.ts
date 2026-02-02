@@ -302,4 +302,34 @@ describe("Validator", () => {
 			assert.match(formulaError.message, /until/);
 		});
 	});
+
+	describe("constraints old. reference", () => {
+		it("rejects old. in preconditions", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-constraints-old-in-precondition.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			assert.strictEqual(result.valid, false);
+			const oldError = result.errors.find((e) => e.code === ErrorCode.InvalidOldReference);
+			assert.ok(oldError, "Should have InvalidOldReference error");
+		});
+
+		it("allows old. in postconditions", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "constraints",
+					target: { function: "push" },
+					preconditions: [{ description: "not full", expression: "size < capacity" }],
+					postconditions: [{ description: "increases", expression: "size == old.size + 1" }],
+				},
+			};
+
+			const result = validate(doc);
+
+			assert.strictEqual(result.valid, true);
+		});
+	});
 });

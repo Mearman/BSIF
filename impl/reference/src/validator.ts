@@ -430,6 +430,16 @@ function validateConstraints(constraints: Constraints): readonly ValidationError
 	// Basic expression syntax validation
 	for (const precondition of constraints.preconditions) {
 		errors.push(...validateExpressionSyntax(precondition.expression, "preconditions"));
+		// old. references are only valid in postconditions
+		if (/\bold\./.test(precondition.expression)) {
+			errors.push(
+				createError(
+					ErrorCode.InvalidOldReference,
+					"old. reference in precondition is invalid (only allowed in postconditions)",
+					{ path: ["preconditions"], suggestion: "Move this constraint to postconditions or remove the old. reference" },
+				),
+			);
+		}
 	}
 
 	for (const postcondition of constraints.postconditions) {
@@ -439,6 +449,16 @@ function validateConstraints(constraints: Constraints): readonly ValidationError
 	if (constraints.invariants) {
 		for (const invariant of constraints.invariants) {
 			errors.push(...validateExpressionSyntax(invariant.expression, "invariants"));
+			// old. references are only valid in postconditions
+			if (/\bold\./.test(invariant.expression)) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidOldReference,
+						"old. reference in invariant is invalid (only allowed in postconditions)",
+						{ path: ["invariants"], suggestion: "Move this constraint to postconditions or remove the old. reference" },
+					),
+				);
+			}
 		}
 	}
 

@@ -1,0 +1,19 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-old-precondition"
+	},
+	"semantics": {
+		"postconditions": [],
+		"preconditions": [
+			{
+				"description": "Bad old ref",
+				"expression": "old.size > 0"
+			}
+		],
+		"target": {
+			"function": "pop"
+		},
+		"type": "constraints"
+	}
+}
