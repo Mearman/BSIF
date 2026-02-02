@@ -297,6 +297,56 @@ describe("Validator", () => {
 			assert.strictEqual(result.valid, true);
 		});
 
+		it("accepts high patch version 1.0.99", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.99", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states: [{ name: "idle" }],
+					transitions: [],
+					initial: "idle",
+				},
+			};
+
+			const result = validate(doc);
+
+			assert.strictEqual(result.valid, true);
+		});
+
+		it("rejects minor version 1.1.0", () => {
+			const doc = {
+				metadata: { bsif_version: "1.1.0", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states: [{ name: "idle" }],
+					transitions: [],
+					initial: "idle",
+				},
+			};
+
+			const result = validate(doc);
+
+			const versionError = result.errors.find((e) => e.code === ErrorCode.VersionMismatch);
+			assert.ok(versionError, "Should have VersionMismatch error");
+		});
+
+		it("rejects major version 2.0.0", () => {
+			const doc = {
+				metadata: { bsif_version: "2.0.0", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states: [{ name: "idle" }],
+					transitions: [],
+					initial: "idle",
+				},
+			};
+
+			const result = validate(doc);
+
+			const versionError = result.errors.find((e) => e.code === ErrorCode.VersionMismatch);
+			assert.ok(versionError, "Should have VersionMismatch error");
+		});
+
 		it("rejects duplicate state names", () => {
 			const doc = {
 				metadata: { bsif_version: "1.0.0", name: "test" },

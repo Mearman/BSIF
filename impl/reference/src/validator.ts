@@ -858,11 +858,9 @@ function validateHybrid(hybrid: Hybrid): readonly ValidationError[] {
 function validateGeneral(doc: BSIFDocument, resourceLimits?: ResourceLimits): readonly ValidationError[] {
 	const errors: ValidationError[] = [];
 
-	// Validate BSIF version compatibility
+	// Validate BSIF version compatibility (supports 1.0.x range)
 	const version = doc.metadata.bsif_version;
-	const supportedVersions = ["1.0.0", "1.0.1", "1.0.2"];
-
-	if (!supportedVersions.some((v) => version.startsWith(v.slice(0, 3)))) {
+	if (!isCompatibleVersion(version)) {
 		errors.push(
 			createError(
 				ErrorCode.VersionMismatch,
@@ -965,6 +963,12 @@ function measureNestingDepth(value: unknown, currentDepth: number): number {
 	}
 
 	return maxDepth;
+}
+
+function isCompatibleVersion(version: string): boolean {
+	const match = /^(\d+)\.(\d+)\.\d+/.exec(version);
+	if (!match) return false;
+	return match[1] === "1" && match[2] === "0";
 }
 
 function checkDuplicateStateNames(sm: StateMachine): readonly ValidationError[] {
