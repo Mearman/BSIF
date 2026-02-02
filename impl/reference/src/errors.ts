@@ -41,6 +41,16 @@ export const enum ErrorCode {
 	InvalidMessageSequence = "E117",
 	InvalidComponentType = "E118",
 	VersionMismatch = "E119",
+	UnreachableState = "E120",
+	DeadlockDetected = "E121",
+	InvalidFormulaStructure = "E122",
+	InvalidOldReference = "E123",
+	NestingDepthExceeded = "E124",
+	NamespaceConflict = "E125",
+	ResourceLimitExceeded = "E126",
+	ParallelStateNoChildren = "E127",
+	InvalidTimingConstraint = "E128",
+	DuplicateReference = "E129",
 
 	// Validation errors (E200-E299)
 	ValidationFailed = "E200",
