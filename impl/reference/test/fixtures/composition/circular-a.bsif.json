@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "circular-a",
+    "version": "1.0.0",
+    "description": "Circular reference A",
+    "references": ["file://./circular-b.bsif.json"]
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [{ "name": "idle" }],
+    "transitions": [],
+    "initial": "idle"
+  }
+}

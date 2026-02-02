@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "dependent-spec",
+    "version": "1.0.0",
+    "description": "Depends on base-spec",
+    "references": ["file://./base.bsif.json"]
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [{ "name": "pending" }, { "name": "done" }],
+    "transitions": [{ "from": "pending", "to": "done", "event": "complete" }],
+    "initial": "pending"
+  }
+}

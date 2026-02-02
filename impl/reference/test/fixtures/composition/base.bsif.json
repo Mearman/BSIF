@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "base-spec",
+    "version": "1.0.0",
+    "description": "Base specification"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [{ "name": "idle" }, { "name": "active" }],
+    "transitions": [{ "from": "idle", "to": "active", "event": "start" }],
+    "initial": "idle"
+  }
+}
