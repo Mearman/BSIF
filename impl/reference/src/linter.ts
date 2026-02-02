@@ -1,8 +1,8 @@
 // BSIF Reference Implementation - Linter
 // Opinionated style checks beyond validation
 
-import type { BSIFDocument, StateMachine } from "./schemas.js";
-import { isStateMachine, isEvents } from "./schemas.js";
+import type { BSIFDocument, StateMachine, Temporal } from "./schemas.js";
+import { isStateMachine, isEvents, isTemporal } from "./schemas.js";
 import { ErrorCode, createError, type ValidationError } from "./errors.js";
 
 //==============================================================================
@@ -11,16 +11,21 @@ import { ErrorCode, createError, type ValidationError } from "./errors.js";
 
 export interface LintOptions {
 	readonly strict?: boolean;
+	readonly rules?: ReadonlySet<string>;  // enable/disable rules by code
 }
 
 export function lint(doc: BSIFDocument, options?: LintOptions): readonly ValidationError[] {
-	const errors: ValidationError[] = [];
+	const allErrors: ValidationError[] = [];
 
-	errors.push(...lintMetadata(doc));
-	errors.push(...lintNaming(doc));
-	errors.push(...lintSemantics(doc, options));
+	allErrors.push(...lintMetadata(doc));
+	allErrors.push(...lintNaming(doc));
+	allErrors.push(...lintSemantics(doc, options));
 
-	return errors;
+	if (options?.rules) {
+		return allErrors.filter((e) => options.rules!.has(e.code));
+	}
+
+	return allErrors;
 }
 
 function lintMetadata(doc: BSIFDocument): readonly ValidationError[] {
@@ -87,6 +92,10 @@ function lintSemantics(doc: BSIFDocument, options?: LintOptions): readonly Valid
 		errors.push(...lintStateMachine(doc.semantics, options));
 	}
 
+	if (isTemporal(doc.semantics)) {
+		errors.push(...lintTemporal(doc.semantics));
+	}
+
 	if (isEvents(doc.semantics)) {
 		// Check for unused event declarations
 		const declaredEvents = new Set(Object.keys(doc.semantics.events));
@@ -146,6 +155,99 @@ function lintStateMachine(sm: StateMachine, _options?: LintOptions): readonly Va
 				{ severity: "warning", path: ["semantics", "final"], suggestion: "Define final states for completeness" },
 			),
 		);
+	}
+
+	// E407: Redundant guard detection
+	const ALWAYS_TRUE_GUARDS = new Set(["true", "1 == 1", "1==1"]);
+	for (const t of sm.transitions) {
+		if (t.guard !== undefined) {
+			const normalized = t.guard.trim().toLowerCase();
+			if (ALWAYS_TRUE_GUARDS.has(normalized)) {
+				errors.push(
+					createError(
+						ErrorCode.LintRedundantGuard,
+						`Transition ${t.from} -> ${t.to} has redundant guard "${t.guard}" which is always true`,
+						{ severity: "warning", path: ["transitions", t.from, "guard"], suggestion: "Remove the always-true guard" },
+					),
+				);
+			}
+		}
+	}
+
+	// E409: Unreachable state hint (states with no incoming transitions except initial)
+	const statesWithIncoming = new Set<string>();
+	for (const t of sm.transitions) {
+		statesWithIncoming.add(t.to);
+	}
+	for (const state of sm.states) {
+		if (state.name === sm.initial) continue;
+		// Skip states that are children (they may be entered via parent)
+		if (state.parent !== undefined) continue;
+		if (!statesWithIncoming.has(state.name)) {
+			errors.push(
+				createError(
+					ErrorCode.LintUnreachableState,
+					`State "${state.name}" has no incoming transitions and is not the initial state`,
+					{ severity: "warning", path: ["states", state.name], suggestion: "Add a transition to this state or remove it" },
+				),
+			);
+		}
+	}
+
+	return errors;
+}
+
+// E408: Simplifiable formula detection
+function lintTemporal(temporal: Temporal): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	for (const property of temporal.properties) {
+		errors.push(...lintFormulaSimplifiable(property.formula, property.name));
+	}
+
+	return errors;
+}
+
+function lintFormulaSimplifiable(formula: unknown, propertyName: string): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	if (typeof formula !== "object" || formula === null) return errors;
+	if (!("operator" in formula) || typeof formula.operator !== "string") return errors;
+
+	// Double negation: not(not(x))
+	if (formula.operator === "not" && "operand" in formula) {
+		const inner = formula.operand;
+		if (typeof inner === "object" && inner !== null && "operator" in inner && inner.operator === "not") {
+			errors.push(
+				createError(
+					ErrorCode.LintSimplifiableFormula,
+					`Property "${propertyName}" contains double negation not(not(...)) which can be simplified`,
+					{ severity: "warning", path: ["properties", propertyName], suggestion: "Remove the double negation" },
+				),
+			);
+		}
+	}
+
+	// Single-operand and/or
+	if ((formula.operator === "and" || formula.operator === "or") && "operands" in formula && Array.isArray(formula.operands)) {
+		if (formula.operands.length === 1) {
+			errors.push(
+				createError(
+					ErrorCode.LintSimplifiableFormula,
+					`Property "${propertyName}" contains ${formula.operator}([x]) with a single operand which is unnecessary`,
+					{ severity: "warning", path: ["properties", propertyName], suggestion: `Remove the unnecessary ${formula.operator} wrapper` },
+				),
+			);
+		}
+	}
+
+	// Recurse
+	if ("operand" in formula) {
+		errors.push(...lintFormulaSimplifiable(formula.operand, propertyName));
+	}
+	if ("operands" in formula && Array.isArray(formula.operands)) {
+		for (const operand of formula.operands) {
+			errors.push(...lintFormulaSimplifiable(operand, propertyName));
+		}
 	}
 
 	return errors;
