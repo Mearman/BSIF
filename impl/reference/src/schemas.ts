@@ -47,6 +47,14 @@ export type TimingConstraint = z.infer<typeof timingConstraint>;
 // State Machine Schemas
 //==============================================================================
 
+export const syncPrimitive = z.object({
+	type: z.union([z.literal("mutex"), z.literal("barrier"), z.literal("channel"), z.literal("semaphore")]),
+	name: z.string().min(1).max(256),
+	capacity: z.number().int().positive().optional(),
+});
+
+export type SyncPrimitive = z.infer<typeof syncPrimitive>;
+
 export const state = z.object({
 	name: z.string().min(1).max(256),
 	entry: z.string().max(4096).optional(),
@@ -54,6 +62,7 @@ export const state = z.object({
 	parent: z.string().optional(),
 	parallel: z.boolean().optional(),
 	timing: timingConstraint.optional(),
+	sync: z.array(syncPrimitive).optional(),
 });
 
 export type State = z.infer<typeof state>;
@@ -103,9 +112,18 @@ export const variableType = z.union([
 
 export type VariableType = z.infer<typeof variableType>;
 
+export const typeParameter = z.object({
+	name: z.string().min(1).max(256),
+	constraint: z.union([variableType, z.literal("any")]).optional(),
+	default: variableType.optional(),
+});
+
+export type TypeParameter = z.infer<typeof typeParameter>;
+
 export const objectType = z.object({
 	type: z.literal("object"),
 	properties: z.record(z.string(), z.union([variableType, z.string()])),
+	typeParameters: z.array(typeParameter).optional(),
 });
 
 export type ObjectType = z.infer<typeof objectType>;
@@ -157,6 +175,13 @@ export const unaryOperator = z.union([
 	z.literal("next"),
 	z.literal("always"),
 	z.literal("eventually"),
+	// CTL path quantifier operators
+	z.literal("forall-next"),    // AX
+	z.literal("exists-next"),    // EX
+	z.literal("forall-globally"),// AG
+	z.literal("exists-globally"),// EG
+	z.literal("forall-finally"), // AF
+	z.literal("exists-finally"), // EF
 ]);
 
 export type UnaryOperator = z.infer<typeof unaryOperator>;
@@ -166,6 +191,9 @@ export const binaryOperator = z.union([
 	z.literal("or"),
 	z.literal("implies"),
 	z.literal("until"),
+	// CTL path quantifier operators
+	z.literal("forall-until"),   // AU
+	z.literal("exists-until"),   // EU
 ]);
 
 export type BinaryOperator = z.infer<typeof binaryOperator>;
@@ -233,6 +261,24 @@ export const constraint = z.object({
 
 export type Constraint = z.infer<typeof constraint>;
 
+export const resourceConstraint = z.object({
+	cpu: z.object({
+		max: z.number().positive().optional(),
+		unit: z.union([z.literal("percent"), z.literal("cores")]).optional(),
+	}).optional(),
+	memory: z.object({
+		max: z.number().positive().optional(),
+		unit: z.union([z.literal("bytes"), z.literal("kb"), z.literal("mb"), z.literal("gb")]).optional(),
+	}).optional(),
+	io: z.object({
+		maxBytesPerSecond: z.number().positive().optional(),
+		maxOpsPerSecond: z.number().positive().optional(),
+	}).optional(),
+	time: timingConstraint.optional(),
+});
+
+export type ResourceConstraint = z.infer<typeof resourceConstraint>;
+
 export const constraints = z.object({
 	type: z.literal("constraints"),
 	target: targetReference.refine((val) => Object.keys(val).length >= 1, {
@@ -241,6 +287,7 @@ export const constraints = z.object({
 	preconditions: z.array(constraint),
 	postconditions: z.array(constraint),
 	invariants: z.array(constraint).optional(),
+	resources: resourceConstraint.optional(),
 });
 
 export type Constraints = z.infer<typeof constraints>;
@@ -265,13 +312,22 @@ export const primitiveType = z.union([
 
 export type PrimitiveType = z.infer<typeof primitiveType>;
 
-export const typeDefinition = z.union([primitiveType, objectType, arrayType, enumType]);
+export const genericRef = z.object({
+	type: z.literal("generic"),
+	name: z.string().min(1),
+	typeArguments: z.array(z.union([variableType, z.string()])).optional(),
+});
+
+export type GenericRef = z.infer<typeof genericRef>;
+
+export const typeDefinition = z.union([primitiveType, objectType, arrayType, enumType, genericRef]);
 
 export type TypeDefinition = z.infer<typeof typeDefinition>;
 
 export const eventDeclaration = z.object({
 	payload: typeDefinition.optional(),
 	attributes: z.record(z.string(), z.unknown()).optional(),
+	correlationKey: z.string().max(256).optional(),
 });
 
 export type EventDeclaration = z.infer<typeof eventDeclaration>;
@@ -326,10 +382,22 @@ export const messageSequence = z.object({
 
 export type MessageSequence = z.infer<typeof messageSequence>;
 
+export const securityProperties = z.object({
+	authentication: z.union([z.literal("none"), z.literal("token"), z.literal("mutual-tls"), z.literal("oauth2")]).optional(),
+	authorization: z.object({
+		policy: z.string().max(4096).optional(),
+		roles: z.array(z.string().max(256)).optional(),
+	}).optional(),
+	confidentiality: z.union([z.literal("none"), z.literal("encrypted"), z.literal("signed")]).optional(),
+});
+
+export type SecurityProperties = z.infer<typeof securityProperties>;
+
 export const interaction = z.object({
 	type: z.literal("interaction"),
 	participants: z.array(participant).min(1),
 	messages: z.array(messageSequence).min(0),
+	security: securityProperties.optional(),
 });
 
 export type Interaction = z.infer<typeof interaction>;
