@@ -440,6 +440,14 @@ function validateTemporal(temporal: Temporal): readonly ValidationError[] {
 		errors.push(...checkFormulaTypeCompatibility(property.formula, temporal.variables, ["properties", property.name]));
 	}
 
+	// Validate enum values for duplicate entries
+	for (const [varName, varType] of Object.entries(temporal.variables)) {
+		errors.push(...validateEnumValues(varName, varType, ["variables"]));
+	}
+
+	// Validate type references in object properties
+	errors.push(...validateTypeReferences(temporal.variables, ["variables"]));
+
 	return errors;
 }
 
@@ -774,6 +782,13 @@ function validateEvents(events: Events): readonly ValidationError[] {
 		}
 	}
 
+	// Validate enum values in event payloads
+	for (const [eventName, eventDecl] of Object.entries(events.events)) {
+		if (eventDecl.payload !== undefined) {
+			errors.push(...validateEnumValues(eventName, eventDecl.payload, ["events", eventName, "payload"]));
+		}
+	}
+
 	// Check for unused event declarations (warnings)
 	const unusedEvents = [...declaredEvents].filter((e) => !referencedEvents.has(e));
 	for (const unusedEvent of unusedEvents) {
@@ -977,6 +992,11 @@ function validateGeneral(doc: BSIFDocument, resourceLimits?: ResourceLimits): re
 		errors.push(...validateCompositionReferences(doc));
 	}
 
+	// Tool mapping validation
+	if (doc.tools) {
+		errors.push(...validateTools(doc));
+	}
+
 	return errors;
 }
 
@@ -1085,6 +1105,75 @@ function measureNestingDepth(value: unknown, currentDepth: number): number {
 	}
 
 	return maxDepth;
+}
+
+function validateTools(doc: BSIFDocument): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	if (!doc.tools) return errors;
+
+	for (const [toolName, mapping] of Object.entries(doc.tools)) {
+		if (typeof mapping === "object" && mapping !== null && Object.keys(mapping).length === 0) {
+			errors.push(
+				createError(
+					ErrorCode.EmptyToolMapping,
+					`Tool mapping "${toolName}" is empty`,
+					{ severity: "warning", path: ["tools", toolName] },
+				),
+			);
+		}
+	}
+
+	return errors;
+}
+
+function validateEnumValues(varName: string, varType: unknown, path: readonly string[]): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	if (typeof varType !== "object" || varType === null) return errors;
+	if (!("type" in varType) || varType.type !== "enum") return errors;
+	if (!("values" in varType) || !Array.isArray(varType.values)) return errors;
+
+	const seen = new Set<string>();
+	for (const val of varType.values) {
+		const key = String(val);
+		if (seen.has(key)) {
+			errors.push(
+				createError(
+					ErrorCode.DuplicateEnumValue,
+					`Duplicate enum value "${key}" in variable "${varName}"`,
+					{ path: [...path, varName, "values"] },
+				),
+			);
+		}
+		seen.add(key);
+	}
+
+	return errors;
+}
+
+function validateTypeReferences(variables: Record<string, unknown>, path: readonly string[]): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	const declaredNames = new Set(Object.keys(variables));
+	const primitives = new Set(["boolean", "integer", "string"]);
+
+	for (const [varName, varType] of Object.entries(variables)) {
+		if (typeof varType !== "object" || varType === null) continue;
+		if (!("type" in varType) || varType.type !== "object") continue;
+		if (!("properties" in varType) || typeof varType.properties !== "object" || varType.properties === null) continue;
+
+		for (const [propName, propType] of Object.entries(varType.properties)) {
+			if (typeof propType === "string" && !primitives.has(propType) && !declaredNames.has(propType)) {
+				errors.push(
+					createError(
+						ErrorCode.UndefinedTypeReference,
+						`Property "${propName}" of variable "${varName}" references undefined type "${propType}"`,
+						{ severity: "warning", path: [...path, varName, "properties", propName] },
+					),
+				);
+			}
+		}
+	}
+
+	return errors;
 }
 
 function collectDescendants(stateName: string, states: readonly State[]): Set<string> {
