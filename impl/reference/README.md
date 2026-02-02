@@ -125,7 +125,7 @@ if (isHybrid(doc.semantics))       { /* narrowed to Hybrid */ }
 | E013 | PatternMismatch | Value doesn't match pattern |
 | E014 | InvalidSemver | `bsif_version` is not valid semver |
 
-### Semantic Validation Errors (E100–E119)
+### Semantic Validation Errors (E100–E129)
 
 | Code | Name | Applies To | Description |
 |------|------|-----------|-------------|
@@ -149,6 +149,16 @@ if (isHybrid(doc.semantics))       { /* narrowed to Hybrid */ }
 | E117 | InvalidMessageSequence | interaction | Invalid message ordering |
 | E118 | InvalidComponentType | hybrid | Component has invalid semantic type |
 | E119 | VersionMismatch | all | Incompatible `bsif_version` |
+| E120 | UnreachableState | state-machine | State not reachable from initial (warning) |
+| E121 | DeadlockDetected | state-machine | Non-final state with no outgoing transitions (warning) |
+| E122 | InvalidFormulaStructure | temporal | Wrong operand count for operator |
+| E123 | InvalidOldReference | constraints | `old.` used outside postconditions |
+| E124 | NestingDepthExceeded | all | Formula/document nesting too deep (warning) |
+| E125 | NamespaceConflict | hybrid | Duplicate names across components (warning) |
+| E126 | ResourceLimitExceeded | all | State count or nesting exceeded (warning) |
+| E127 | ParallelStateNoChildren | state-machine | Parallel state has no child states (warning) |
+| E128 | InvalidTimingConstraint | state-machine | Conflicting timing values (warning) |
+| E129 | DuplicateReference | all | Duplicate reference URL (warning) |
 
 ### General Validation Errors (E200–E201)
 
@@ -166,13 +176,22 @@ The `check` command runs semantic validation beyond schema conformance:
 - All transition `from`/`to` must reference existing states
 - No duplicate state names
 - Final states (if declared) must exist
+- Reachability analysis: warns about states unreachable from initial
+- Deadlock detection: warns about non-final states with no outgoing transitions
+- Parallel states must have child states (states with `parent` pointing to them)
+- Timing constraint validation (deadline vs timeout consistency)
+- Circular parent reference detection
 
 ### Temporal Logic
 - All variables referenced in formulas must be declared
 - No duplicate property names
+- Formula structure validation (unary ops need `operand`, binary ops need `operands`)
+- `until` operator requires exactly 2 operands
+- Formula nesting depth limit (100)
 
 ### Constraints
 - Expression syntax validation (balanced parentheses, valid operators)
+- `old.` references only allowed in postconditions (not preconditions/invariants)
 
 ### Events
 - All handler `event` fields must reference declared events
@@ -180,10 +199,17 @@ The `check` command runs semantic validation beyond schema conformance:
 
 ### Interaction
 - All message `from`/`to` fields must reference declared participants
+- No duplicate participant names
 
 ### Hybrid
 - All components must have a valid semantic `type`
 - Validates each component with its type-specific rules
+- Namespace conflict detection across components (state/variable/event names)
+
+### General
+- BSIF version compatibility (supports 1.0.x)
+- Resource limits: state count (default 1000), nesting depth (default 32)
+- Composition reference validation (no duplicates)
 
 ## Project Structure
 
