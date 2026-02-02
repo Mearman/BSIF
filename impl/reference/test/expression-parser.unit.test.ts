@@ -74,12 +74,24 @@ describe("Expression Parser", () => {
 
 		it("parses member access (obj.prop)", () => {
 			const result = parseExpression("buffer.length");
-			assert.deepStrictEqual(result, { variable: "buffer.length" });
+			assert.deepStrictEqual(result, {
+				member: { target: { variable: "buffer" }, property: "length" }
+			});
 		});
 
 		it("parses chained member access", () => {
 			const result = parseExpression("obj.prop.nested");
-			assert.deepStrictEqual(result, { variable: "obj.prop.nested" });
+			assert.deepStrictEqual(result, {
+				member: {
+					target: {
+						member: {
+							target: { variable: "obj" },
+							property: "prop"
+						}
+					},
+					property: "nested"
+				}
+			});
 		});
 	});
 
@@ -432,7 +444,7 @@ describe("Expression Parser", () => {
 			assert.deepStrictEqual(result, {
 				operator: "<",
 				operands: [
-					{ variable: "buffer.length" },
+					{ member: { target: { variable: "buffer" }, property: "length" } },
 					{ literal: 10 }
 				]
 			});
@@ -542,7 +554,7 @@ describe("Expression Parser", () => {
 			assert.deepStrictEqual(result, {
 				operator: "<",
 				operands: [
-					{ variable: "buffer.length" },
+					{ member: { target: { variable: "buffer" }, property: "length" } },
 					{ literal: 10 }
 				]
 			});
@@ -681,10 +693,52 @@ describe("Expression Parser", () => {
 
 		it("parses property access after array access", () => {
 			const result = parseExpression("arr[0].prop");
-			// Note: This is a known limitation - arr[0].prop produces a stringified variable name
-			// Ideally we'd have a proper member access AST node for this case
-			assert.ok("variable" in result);
-			assert.strictEqual((result as { variable: string }).variable.includes(".prop"), true);
+			assert.deepStrictEqual(result, {
+				member: {
+					target: {
+						access: {
+							target: { variable: "arr" },
+							index: { literal: 0 }
+						}
+					},
+					property: "prop"
+				}
+			});
+		});
+
+		it("parses chained member access", () => {
+			const result = parseExpression("obj.prop.nested");
+			assert.deepStrictEqual(result, {
+				member: {
+					target: {
+						member: {
+							target: { variable: "obj" },
+							property: "prop"
+						}
+					},
+					property: "nested"
+				}
+			});
+		});
+
+		it("parses array access followed by chained member access", () => {
+			const result = parseExpression("data[0].prop.value");
+			assert.deepStrictEqual(result, {
+				member: {
+					target: {
+						member: {
+							target: {
+								access: {
+									target: { variable: "data" },
+									index: { literal: 0 }
+								}
+							},
+							property: "prop"
+						}
+					},
+					property: "value"
+				}
+			});
 		});
 
 		it("parses array access in expression", () => {
