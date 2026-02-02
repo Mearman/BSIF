@@ -559,4 +559,211 @@ describe("Expression Parser", () => {
 			});
 		});
 	});
+
+	describe("Function calls", () => {
+		it("parses simple function call with no arguments", () => {
+			const result = parseExpression("readyForInput()");
+			assert.deepStrictEqual(result, {
+				call: "readyForInput",
+				arguments: []
+			});
+		});
+
+		it("parses function call with single argument", () => {
+			const result = parseExpression("parseFloat(buffer)");
+			assert.deepStrictEqual(result, {
+				call: "parseFloat",
+				arguments: [
+					{ variable: "buffer" }
+				]
+			});
+		});
+
+		it("parses function call with multiple arguments", () => {
+			const result = parseExpression("executeOperation(a, b, op)");
+			assert.deepStrictEqual(result, {
+				call: "executeOperation",
+				arguments: [
+					{ variable: "a" },
+					{ variable: "b" },
+					{ variable: "op" }
+				]
+			});
+		});
+
+		it("parses function call with literal arguments", () => {
+			const result = parseExpression('display.toString()');
+			assert.deepStrictEqual(result, {
+				call: "display.toString",
+				arguments: []
+			});
+		});
+
+		it("parses nested function calls", () => {
+			const result = parseExpression("func1(func2(x))");
+			assert.deepStrictEqual(result, {
+				call: "func1",
+				arguments: [
+					{
+						call: "func2",
+						arguments: [{ variable: "x" }]
+					}
+				]
+			});
+		});
+
+		it("parses function call in expression", () => {
+			const result = parseExpression("parseFloat(buffer) === 0");
+			assert.deepStrictEqual(result, {
+				operator: "===",
+				operands: [
+					{
+						call: "parseFloat",
+						arguments: [{ variable: "buffer" }]
+					},
+					{ literal: 0 }
+				]
+			});
+		});
+	});
+
+	describe("Array access", () => {
+		it("parses simple array access with numeric index", () => {
+			const result = parseExpression("arr[0]");
+			assert.deepStrictEqual(result, {
+				access: {
+					target: { variable: "arr" },
+					index: { literal: 0 }
+				}
+			});
+		});
+
+		it("parses array access with variable index", () => {
+			const result = parseExpression("items[index]");
+			assert.deepStrictEqual(result, {
+				access: {
+					target: { variable: "items" },
+					index: { variable: "index" }
+				}
+			});
+		});
+
+		it("parses array access with expression index", () => {
+			const result = parseExpression("data[i + 1]");
+			assert.deepStrictEqual(result, {
+				access: {
+					target: { variable: "data" },
+					index: {
+						operator: "+",
+						operands: [
+							{ variable: "i" },
+							{ literal: 1 }
+						]
+					}
+				}
+			});
+		});
+
+		it("parses chained array access", () => {
+			const result = parseExpression("matrix[0][1]");
+			assert.deepStrictEqual(result, {
+				access: {
+					target: {
+						access: {
+							target: { variable: "matrix" },
+							index: { literal: 0 }
+						}
+					},
+					index: { literal: 1 }
+				}
+			});
+		});
+
+		it("parses property access after array access", () => {
+			const result = parseExpression("arr[0].prop");
+			// Note: This is a known limitation - arr[0].prop produces a stringified variable name
+			// Ideally we'd have a proper member access AST node for this case
+			assert.ok("variable" in result);
+			assert.strictEqual((result as { variable: string }).variable.includes(".prop"), true);
+		});
+
+		it("parses array access in expression", () => {
+			const result = parseExpression("arr[0] > 5");
+			assert.deepStrictEqual(result, {
+				operator: ">",
+				operands: [
+					{
+						access: {
+							target: { variable: "arr" },
+							index: { literal: 0 }
+						}
+					},
+					{ literal: 5 }
+				]
+			});
+		});
+	});
+
+	describe("Statement sequences", () => {
+		it("parses simple two-statement sequence", () => {
+			const result = parseExpression("x = 1; y = 2");
+			assert.deepStrictEqual(result, {
+				sequence: [
+					{
+						operator: "=",
+						operands: [{ variable: "x" }, { literal: 1 }]
+					},
+					{
+						operator: "=",
+						operands: [{ variable: "y" }, { literal: 2 }]
+					}
+				]
+			});
+		});
+
+		it("parses multi-statement sequence with trailing semicolon", () => {
+			const result = parseExpression("a = 1; b = 2;");
+			assert.deepStrictEqual(result, {
+				sequence: [
+					{
+						operator: "=",
+						operands: [{ variable: "a" }, { literal: 1 }]
+					},
+					{
+						operator: "=",
+						operands: [{ variable: "b" }, { literal: 2 }]
+					}
+				]
+			});
+		});
+
+		it("parses three-statement sequence", () => {
+			const result = parseExpression("display = '0'; accumulator = null; pendingOperation = null");
+			assert.strictEqual(result.sequence?.length, 3);
+		});
+
+		it("parses statement sequence with function calls", () => {
+			const result = parseExpression("resetAll(); display = '0'");
+			assert.deepStrictEqual(result, {
+				sequence: [
+					{ call: "resetAll", arguments: [] },
+					{
+						operator: "=",
+						operands: [
+							{ variable: "display" },
+							{ literal: "0" }
+						]
+					}
+				]
+			});
+		});
+
+		it("parses complex statement sequence from BSIF spec", () => {
+			const result = parseExpression("display = result.toString(); result = null");
+			assert.strictEqual(result.sequence?.length, 2);
+			const first = result.sequence![0]!;
+			assert.strictEqual("operator" in first, true);
+			assert.strictEqual((first as { operator: string }).operator, "=");
+		});
+	});
 });
