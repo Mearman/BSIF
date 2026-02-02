@@ -169,7 +169,8 @@ export async function parseFileWithValidation(
 
 function isValidationError(error: unknown): error is ValidationError {
 	return (
-		error instanceof Error &&
+		typeof error === "object" &&
+		error !== null &&
 		"code" in error &&
 		"severity" in error &&
 		"message" in error
