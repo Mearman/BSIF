@@ -332,4 +332,19 @@ describe("Validator", () => {
 			assert.strictEqual(result.valid, true);
 		});
 	});
+
+	describe("hybrid namespace conflicts", () => {
+		it("warns about conflicting state names across components", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-hybrid-namespace-conflict.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const conflictError = result.errors.find((e) => e.code === ErrorCode.NamespaceConflict);
+			assert.ok(conflictError, "Should have NamespaceConflict warning");
+			assert.strictEqual(conflictError.severity, "warning");
+			assert.match(conflictError.message, /idle/);
+		});
+	});
 });

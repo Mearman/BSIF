@@ -1,0 +1,29 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-namespace-conflict"
+	},
+	"semantics": {
+		"components": [
+			{
+				"initial": "idle",
+				"states": [
+					{ "name": "idle" },
+					{ "name": "active" }
+				],
+				"transitions": [],
+				"type": "state-machine"
+			},
+			{
+				"initial": "idle",
+				"states": [
+					{ "name": "idle" },
+					{ "name": "running" }
+				],
+				"transitions": [],
+				"type": "state-machine"
+			}
+		],
+		"type": "hybrid"
+	}
+}

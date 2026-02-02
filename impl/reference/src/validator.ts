@@ -644,6 +644,59 @@ function validateHybrid(hybrid: Hybrid): readonly ValidationError[] {
 		}
 	}
 
+	// Namespace conflict detection across components
+	const stateNames = new Map<string, number>();
+	const variableNames = new Map<string, number>();
+	const eventNames = new Map<string, number>();
+
+	for (let i = 0; i < hybrid.components.length; i++) {
+		const component = hybrid.components[i];
+
+		if (isStateMachine(component)) {
+			for (const state of component.states) {
+				if (stateNames.has(state.name)) {
+					errors.push(
+						createError(
+							ErrorCode.NamespaceConflict,
+							`State name "${state.name}" conflicts between components ${stateNames.get(state.name)} and ${i}`,
+							{ severity: "warning", path: ["components", String(i), "states", state.name] },
+						),
+					);
+				} else {
+					stateNames.set(state.name, i);
+				}
+			}
+		} else if (isTemporal(component)) {
+			for (const varName of Object.keys(component.variables)) {
+				if (variableNames.has(varName)) {
+					errors.push(
+						createError(
+							ErrorCode.NamespaceConflict,
+							`Variable name "${varName}" conflicts between components ${variableNames.get(varName)} and ${i}`,
+							{ severity: "warning", path: ["components", String(i), "variables", varName] },
+						),
+					);
+				} else {
+					variableNames.set(varName, i);
+				}
+			}
+		} else if (isEvents(component)) {
+			for (const eventName of Object.keys(component.events)) {
+				if (eventNames.has(eventName)) {
+					errors.push(
+						createError(
+							ErrorCode.NamespaceConflict,
+							`Event name "${eventName}" conflicts between components ${eventNames.get(eventName)} and ${i}`,
+							{ severity: "warning", path: ["components", String(i), "events", eventName] },
+						),
+					);
+				} else {
+					eventNames.set(eventName, i);
+				}
+			}
+		}
+	}
+
 	return errors;
 }
 
