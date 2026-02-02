@@ -64,6 +64,7 @@ describe("Python Generator", () => {
 		const content = [...suite.files.values()][0]!;
 		assert.ok(content.includes("precondition"));
 		assert.ok(content.includes("postcondition"));
+		assert.ok(!content.includes("TODO"), "Generated constraints should not contain TODO placeholders");
 	});
 
 	it("generates event tests", () => {

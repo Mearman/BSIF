@@ -3,6 +3,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 import { TypeScriptGenerator } from "../../src/generators/targets/typescript.js";
+import { constraintToTypeScript } from "../../src/generators/expression-evaluator.js";
 import type { BSIFDocument } from "../../src/schemas.js";
 
 describe("TypeScript Generator", () => {
@@ -64,6 +65,7 @@ describe("TypeScript Generator", () => {
 		const content = [...suite.files.values()][0]!;
 		assert.ok(content.includes("precondition"));
 		assert.ok(content.includes("postcondition"));
+		assert.ok(!content.includes("TODO"), "Generated constraints should not contain TODO placeholders");
 	});
 
 	it("generates event handler tests", () => {
@@ -113,5 +115,27 @@ describe("TypeScript Generator", () => {
 
 		const suite = jestGen.generate(doc);
 		assert.ok(suite.dependencies.includes("jest"));
+	});
+});
+
+describe("constraint expression evaluation", () => {
+	it("generates assertion for comparison expression", () => {
+		const result = constraintToTypeScript("x > 0", "pre");
+		assert.ok(result.includes("expect"));
+		assert.ok(result.includes("toBeGreaterThan"));
+		assert.ok(!result.includes("TODO"));
+	});
+
+	it("generates old. reference assertion for postcondition", () => {
+		const result = constraintToTypeScript("size == old.size + 1", "post");
+		assert.ok(result.includes("oldState"));
+		assert.ok(!result.includes("TODO"));
+	});
+
+	it("generates descriptive comment for unsupported expression", () => {
+		const result = constraintToTypeScript("forall x in items: x.valid()", "pre");
+		assert.ok(result.includes("Constraint:"));
+		assert.ok(result.includes("requires manual"));
+		assert.ok(!result.includes("TODO"));
 	});
 });

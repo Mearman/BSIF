@@ -963,6 +963,168 @@ describe("Validator", () => {
 			assert.ok(timingError, "Should have InvalidTimingConstraint warning");
 			assert.strictEqual(timingError.severity, "warning");
 		});
+
+		describe("expanded timing validation", () => {
+			it("warns on unreasonably large timing values", () => {
+				const doc = {
+					metadata: { bsif_version: "1.0.0", name: "test" },
+					semantics: {
+						type: "state-machine",
+						states: [{ name: "idle" }, { name: "active" }],
+						transitions: [
+							{ from: "idle", to: "active", timing: { deadline: 2e9, unit: "ms" } },
+						],
+						initial: "idle",
+					},
+				};
+
+				const result = validate(doc);
+
+				const timingError = result.errors.find(
+					(e) => e.code === ErrorCode.InvalidTimingConstraint && e.message.includes("exceeds"),
+				);
+				assert.ok(timingError, "Should warn about unreasonably large timing value");
+				assert.strictEqual(timingError.severity, "warning");
+			});
+
+			it("warns on period without unit", () => {
+				const doc = {
+					metadata: { bsif_version: "1.0.0", name: "test" },
+					semantics: {
+						type: "state-machine",
+						states: [{ name: "idle" }, { name: "active" }],
+						transitions: [
+							{ from: "idle", to: "active", timing: { period: 100 } },
+						],
+						initial: "idle",
+					},
+				};
+
+				const result = validate(doc);
+
+				const timingError = result.errors.find(
+					(e) => e.code === ErrorCode.InvalidTimingConstraint && e.message.includes("period"),
+				);
+				assert.ok(timingError, "Should warn about period without unit");
+				assert.strictEqual(timingError.severity, "warning");
+			});
+
+			it("does not warn when timing values are reasonable", () => {
+				const doc = {
+					metadata: { bsif_version: "1.0.0", name: "test" },
+					semantics: {
+						type: "state-machine",
+						states: [{ name: "idle" }, { name: "active" }],
+						transitions: [
+							{ from: "idle", to: "active", timing: { deadline: 5000, timeout: 1000, unit: "ms" } },
+						],
+						initial: "idle",
+					},
+				};
+
+				const result = validate(doc);
+
+				const timingError = result.errors.find(
+					(e) => e.code === ErrorCode.InvalidTimingConstraint && e.message.includes("exceeds"),
+				);
+				assert.strictEqual(timingError, undefined, "Should not warn about reasonable timing values");
+			});
+
+			it("warns on unreasonably large state timing values", () => {
+				const doc = {
+					metadata: { bsif_version: "1.0.0", name: "test" },
+					semantics: {
+						type: "state-machine",
+						states: [
+							{ name: "idle", timing: { deadline: 2e9, unit: "ms" } },
+							{ name: "active" },
+						],
+						transitions: [
+							{ from: "idle", to: "active" },
+						],
+						initial: "idle",
+					},
+				};
+
+				const result = validate(doc);
+
+				const timingError = result.errors.find(
+					(e) => e.code === ErrorCode.InvalidTimingConstraint && e.message.includes("exceeds") && e.message.includes("idle"),
+				);
+				assert.ok(timingError, "Should warn about unreasonably large state timing value");
+				assert.strictEqual(timingError.severity, "warning");
+			});
+
+			it("warns on state deadline less than timeout", () => {
+				const doc = {
+					metadata: { bsif_version: "1.0.0", name: "test" },
+					semantics: {
+						type: "state-machine",
+						states: [
+							{ name: "idle", timing: { deadline: 100, timeout: 500, unit: "ms" } },
+							{ name: "active" },
+						],
+						transitions: [
+							{ from: "idle", to: "active" },
+						],
+						initial: "idle",
+					},
+				};
+
+				const result = validate(doc);
+
+				const timingError = result.errors.find(
+					(e) => e.code === ErrorCode.InvalidTimingConstraint && e.message.includes("idle") && e.message.includes("deadline"),
+				);
+				assert.ok(timingError, "Should warn about state deadline less than timeout");
+				assert.strictEqual(timingError.severity, "warning");
+			});
+
+			it("warns on state period without unit", () => {
+				const doc = {
+					metadata: { bsif_version: "1.0.0", name: "test" },
+					semantics: {
+						type: "state-machine",
+						states: [
+							{ name: "idle", timing: { period: 100 } },
+							{ name: "active" },
+						],
+						transitions: [
+							{ from: "idle", to: "active" },
+						],
+						initial: "idle",
+					},
+				};
+
+				const result = validate(doc);
+
+				const timingError = result.errors.find(
+					(e) => e.code === ErrorCode.InvalidTimingConstraint && e.message.includes("period") && e.message.includes("idle"),
+				);
+				assert.ok(timingError, "Should warn about state period without unit");
+				assert.strictEqual(timingError.severity, "warning");
+			});
+		});
+	});
+
+	describe("error file field", () => {
+		it("includes file field when provided in options", () => {
+			const doc = {
+				metadata: { bsif_version: "2.0.0", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states: [{ name: "idle" }],
+					transitions: [],
+					initial: "idle",
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true, file: "/path/to/test.bsif.json" });
+
+			assert.strictEqual(result.valid, false);
+			assert.ok(result.errors.length > 0);
+			assert.strictEqual(result.errors[0].file, "/path/to/test.bsif.json");
+		});
 	});
 
 	describe("composition references", () => {
@@ -1010,6 +1172,46 @@ describe("Validator", () => {
 			);
 			assert.ok(selfRefError, "Should have self-reference warning");
 			assert.strictEqual(selfRefError.severity, "warning");
+		});
+	});
+
+	describe("expression safety warnings", () => {
+		it("warns about suspicious patterns in expressions", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "constraints",
+					target: { function: "test" },
+					preconditions: [{ description: "dangerous", expression: "eval(input)" }],
+					postconditions: [{ description: "safe", expression: "result > 0" }],
+				},
+			};
+
+			const result = validate(doc);
+
+			const safetyWarning = result.errors.find(
+				(e) => e.code === ErrorCode.InvalidExpression && e.severity === "warning",
+			);
+			assert.ok(safetyWarning, "Should have expression safety warning");
+		});
+
+		it("does not warn about valid expressions", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "constraints",
+					target: { function: "push" },
+					preconditions: [{ description: "not full", expression: "size < capacity" }],
+					postconditions: [{ description: "increases", expression: "size == old.size + 1" }],
+				},
+			};
+
+			const result = validate(doc);
+
+			const safetyWarning = result.errors.find(
+				(e) => e.code === ErrorCode.InvalidExpression && e.severity === "warning",
+			);
+			assert.strictEqual(safetyWarning, undefined, "Should not have expression safety warning");
 		});
 	});
 });
