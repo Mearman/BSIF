@@ -1,17 +1,22 @@
 // BSIF Reference Implementation - Convert Command
-// Converts BSIF documents between JSON and YAML formats
+// Converts BSIF documents between JSON, YAML, TLA+, SCXML, and SMT-LIB formats
 
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseContent } from "../parser.js";
 import { validate } from "../validator.js";
 import { stringify as yamlStringify } from "yaml";
+import type { BSIFDocument } from "../schemas.js";
+import { TLAPlusMapper } from "../mappers/tlaplus.js";
+import { SCXMLMapper } from "../mappers/scxml.js";
+import { SMTLIBMapper } from "../mappers/smtlib.js";
 
 export async function convertCommand(
 	inputPath: string,
 	options: Record<string, unknown>,
 ): Promise<number> {
-	const format = typeof options.format === "string" ? (options.format === "json" || options.format === "yaml" ? options.format : undefined) : undefined;
+	const validFormats = ["json", "yaml", "tlaplus", "scxml", "smtlib"];
+	const format = typeof options.format === "string" ? (validFormats.includes(options.format) ? options.format : undefined) : undefined;
 	const output = typeof options.output === "string" ? options.output : undefined;
 	const shouldValidate = options.validate !== false;
 
@@ -20,7 +25,7 @@ export async function convertCommand(
 
 	if (!outputFormat) {
 		console.error("Error: Cannot determine output format");
-		console.error("Specify --format=<json|yaml> or provide output file with .json/.yaml extension");
+		console.error("Specify --format=<json|yaml|tlaplus|scxml|smtlib> or provide output file with .json/.yaml/.tla/.scxml/.smt2 extension");
 		return 1;
 	}
 
@@ -58,16 +63,28 @@ export async function convertCommand(
 	return 0;
 }
 
-function detectFormatFromOutput(outputPath: string): "json" | "yaml" | null {
+function detectFormatFromOutput(outputPath: string): string | null {
 	if (outputPath.endsWith(".json")) return "json";
 	if (outputPath.endsWith(".yaml") || outputPath.endsWith(".yml")) return "yaml";
+	if (outputPath.endsWith(".tla")) return "tlaplus";
+	if (outputPath.endsWith(".scxml")) return "scxml";
+	if (outputPath.endsWith(".smt2")) return "smtlib";
 	return null;
 }
 
-function convertFormat(doc: unknown, format: "json" | "yaml"): string {
-	if (format === "json") {
+function convertFormat(doc: unknown, format: string): string {
+	switch (format) {
+	case "json":
 		return JSON.stringify(doc, null, 2);
+	case "yaml":
+		return yamlStringify(doc);
+	case "tlaplus":
+		return new TLAPlusMapper().fromBSIF(doc as BSIFDocument);
+	case "scxml":
+		return new SCXMLMapper().fromBSIF(doc as BSIFDocument);
+	case "smtlib":
+		return new SMTLIBMapper().fromBSIF(doc as BSIFDocument);
+	default:
+		throw new Error(`Unsupported format: ${format}`);
 	}
-	// YAML
-	return yamlStringify(doc);
 }
