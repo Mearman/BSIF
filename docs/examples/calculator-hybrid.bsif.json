@@ -1,0 +1,256 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "interactive-calculator-hybrid",
+    "version": "1.0.0",
+    "description": "Complete calculator specification combining state machine, interaction protocol, and temporal properties",
+    "author": "BSIF Project",
+    "license": "MIT",
+    "references": [
+      "https://bsif-spec.io/examples/calculator-state-machine",
+      "https://bsif-spec.io/examples/calculator-interaction"
+    ]
+  },
+  "semantics": {
+    "type": "hybrid",
+    "components": [
+      {
+        "type": "state-machine",
+        "states": [
+          {
+            "name": "idle",
+            "entry": "display = '0'; accumulator = null; pendingOperation = null"
+          },
+          {
+            "name": "waitingForOperand",
+            "entry": "buffer = ''"
+          },
+          {
+            "name": "waitingForOperation",
+            "entry": "accumulator = currentValue"
+          },
+          {
+            "name": "showingResult",
+            "entry": "display = result.toString()"
+          },
+          {
+            "name": "error",
+            "entry": "display = 'ERROR'"
+          }
+        ],
+        "transitions": [
+          {
+            "from": "idle",
+            "to": "waitingForOperand",
+            "event": "digit"
+          },
+          {
+            "from": "waitingForOperand",
+            "to": "waitingForOperation",
+            "event": "operation"
+          },
+          {
+            "from": "waitingForOperation",
+            "to": "waitingForOperand",
+            "event": "digit"
+          },
+          {
+            "from": "waitingForOperation",
+            "to": "showingResult",
+            "event": "equals"
+          },
+          {
+            "from": "waitingForOperation",
+            "to": "error",
+            "event": "equals",
+            "guard": "operation === 'DIVIDE' && operand === 0"
+          },
+          {
+            "from": "showingResult",
+            "to": "waitingForOperand",
+            "event": "digit"
+          },
+          {
+            "from": "any",
+            "to": "idle",
+            "event": "clear"
+          }
+        ],
+        "initial": "idle"
+      },
+      {
+        "type": "interaction",
+        "participants": [
+          { "name": "user", "role": "Initiator" },
+          { "name": "calculator", "role": "Processor" }
+        ],
+        "messages": [
+          {
+            "from": "user",
+            "to": "calculator",
+            "message": "DIGIT",
+            "payload": {
+              "type": "object",
+              "properties": {
+                "value": { "type": "number", "minimum": 0, "maximum": 9 }
+              }
+            }
+          },
+          {
+            "from": "user",
+            "to": "calculator",
+            "message": "OPERATION",
+            "payload": {
+              "type": "object",
+              "properties": {
+                "operator": { "type": "string", "enum": ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"] }
+              }
+            }
+          },
+          {
+            "from": "user",
+            "to": "calculator",
+            "message": "EQUALS"
+          },
+          {
+            "from": "user",
+            "to": "calculator",
+            "message": "CLEAR"
+          },
+          {
+            "from": "calculator",
+            "to": "user",
+            "message": "DISPLAY_UPDATE",
+            "payload": {
+              "type": "object",
+              "properties": {
+                "value": { "type": "string" }
+              }
+            }
+          },
+          {
+            "from": "calculator",
+            "to": "user",
+            "message": "ERROR",
+            "payload": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "temporal",
+        "logic": "ltl",
+        "variables": {
+          "display_value": "string",
+          "error_state": "boolean"
+        },
+        "properties": [
+          {
+            "name": "eventually_returns_to_idle_after_clear",
+            "formula": {
+              "operator": "globally",
+              "operand": {
+                "operator": "implies",
+                "operands": [
+                  { "operator": "variable", "variable": "clear_pressed" },
+                  {
+                    "operator": "finally",
+                    "operand": {
+                      "operator": "variable",
+                      "variable": "idle_state"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "no division_by_zero",
+            "formula": {
+              "operator": "globally",
+              "operand": {
+                "operator": "not",
+                "operand": {
+                  "operator": "and",
+                  "operands": [
+                    { "operator": "variable", "variable": "division_requested" },
+                    { "operator": "variable", "variable": "zero_divisor" },
+                    {
+                      "operator": "not",
+                      "operand": { "operator": "variable", "variable": "error_state" }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "name": "result_shown_after_equals",
+            "formula": {
+              "operator": "globally",
+              "operand": {
+                "operator": "implies",
+                "operands": [
+                  { "operator": "variable", "variable": "equals_pressed" },
+                  {
+                    "operator": "finally",
+                    "operand": {
+                      "operator": "and",
+                      "operands": [
+                        { "operator": "variable", "variable": "showing_result_state" },
+                        {
+                          "operator": "not",
+                          "operand": { "operator": "variable", "variable": "error_state" }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "tests": [
+    {
+      "name": "complete-calculation-cycle",
+      "description": "Full workflow: 5 + 3 = ",
+      "input": {
+        "messages": [
+          { "from": "user", "to": "calculator", "message": "DIGIT", "value": 5 },
+          { "from": "calculator", "to": "user", "message": "DISPLAY_UPDATE", "value": "5" },
+          { "from": "user", "to": "calculator", "message": "OPERATION", "operator": "ADD" },
+          { "from": "user", "to": "calculator", "message": "DIGIT", "value": 3 },
+          { "from": "calculator", "to": "user", "message": "DISPLAY_UPDATE", "value": "3" },
+          { "from": "user", "to": "calculator", "message": "EQUALS" },
+          { "from": "calculator", "to": "user", "message": "DISPLAY_UPDATE", "value": "8" }
+        ]
+      },
+      "expected": {
+        "finalState": "showingResult",
+        "displayValue": "8",
+        "satisfies": ["result_shown_after_equals"]
+      }
+    }
+  ],
+  "documentation": {
+    "overview": "This hybrid specification combines three semantic types to fully describe an interactive calculator: (1) State machine tracks internal calculator states, (2) Interaction protocol defines the user-calculator message flow, and (3) Temporal properties specify correctness invariants the calculator must maintain.",
+    "examples": [
+      {
+        "title": "Valid Calculation",
+        "description": "User enters digits and operation, receives result"
+      },
+      {
+        "title": "Error Handling",
+        "description": "Division by zero triggers error state and error message to user"
+      }
+    ]
+  }
+}

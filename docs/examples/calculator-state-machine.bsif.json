@@ -1,0 +1,193 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "calculator-state-machine",
+    "version": "1.0.0",
+    "description": "State machine for a basic calculator with idle, input, and error states",
+    "author": "BSIF Project",
+    "license": "MIT"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      {
+        "name": "idle",
+        "entry": "display = '0'; accumulator = null; pendingOperation = null",
+        "exit": "readyForInput()"
+      },
+      {
+        "name": "enteringFirstOperand",
+        "entry": "buffer = ''",
+        "timing": {
+          "timeout": { "value": 300, "unit": "s" }
+        }
+      },
+      {
+        "name": "enteringSecondOperand",
+        "entry": "buffer = ''",
+        "timing": {
+          "timeout": { "value": 300, "unit": "s" }
+        }
+      },
+      {
+        "name": "showingResult",
+        "entry": "display = result.toString()",
+        "timing": {
+          "timeout": { "value": 60, "unit": "s" }
+        }
+      },
+      {
+        "name": "error",
+        "entry": "display = 'ERROR'; errorMessage = error",
+        "timing": {
+          "timeout": { "value": 30, "unit": "s" }
+        }
+      }
+    ],
+    "transitions": [
+      {
+        "from": "idle",
+        "to": "enteringFirstOperand",
+        "event": "digitPressed",
+        "guard": "digit >= 0 && digit <= 9",
+        "action": "buffer += digit.toString()"
+      },
+      {
+        "from": "enteringFirstOperand",
+        "to": "enteringFirstOperand",
+        "event": "digitPressed",
+        "guard": "buffer.length < 10",
+        "action": "buffer += digit.toString()"
+      },
+      {
+        "from": "enteringFirstOperand",
+        "to": "enteringSecondOperand",
+        "event": "operationPressed",
+        "guard": "buffer.length > 0",
+        "action": "accumulator = parseFloat(buffer); pendingOperation = operation"
+      },
+      {
+        "from": "enteringSecondOperand",
+        "to": "enteringSecondOperand",
+        "event": "digitPressed",
+        "guard": "buffer.length < 10",
+        "action": "buffer += digit.toString()"
+      },
+      {
+        "from": "enteringSecondOperand",
+        "to": "showingResult",
+        "event": "equalsPressed",
+        "guard": "buffer.length > 0 && accumulator !== null && pendingOperation !== null",
+        "action": "result = executeOperation(accumulator, parseFloat(buffer), pendingOperation)"
+      },
+      {
+        "from": "enteringSecondOperand",
+        "to": "error",
+        "event": "equalsPressed",
+        "guard": "pendingOperation === 'DIVIDE' && parseFloat(buffer) === 0",
+        "action": "error = 'Division by zero'"
+      },
+      {
+        "from": "showingResult",
+        "to": "enteringFirstOperand",
+        "event": "digitPressed",
+        "action": "buffer = digit.toString(); result = null"
+      },
+      {
+        "from": "showingResult",
+        "to": "idle",
+        "event": "clearPressed",
+        "action": "resetAll()"
+      },
+      {
+        "from": "error",
+        "to": "idle",
+        "event": "clearPressed",
+        "action": "resetAll()"
+      },
+      {
+        "from": "enteringFirstOperand",
+        "to": "idle",
+        "event": "clearPressed",
+        "action": "resetAll()"
+      },
+      {
+        "from": "enteringSecondOperand",
+        "to": "idle",
+        "event": "clearPressed",
+        "action": "resetAll()"
+      }
+    ],
+    "initial": "idle",
+    "final": []
+  },
+  "tests": [
+    {
+      "name": "basic-addition-flow",
+      "description": "User enters 5 + 3 = and gets result 8",
+      "input": {
+        "initialState": "idle",
+        "events": [
+          { "event": "digitPressed", "digit": 5 },
+          { "event": "operationPressed", "operation": "ADD" },
+          { "event": "digitPressed", "digit": 3 },
+          { "event": "equalsPressed" }
+        ]
+      },
+      "expected": {
+        "finalState": "showingResult",
+        "result": 8
+      }
+    },
+    {
+      "name": "division-by-zero-error",
+      "description": "User attempts 10 / 0 and enters error state",
+      "input": {
+        "initialState": "idle",
+        "events": [
+          { "event": "digitPressed", "digit": 1 },
+          { "event": "digitPressed", "digit": 0 },
+          { "event": "operationPressed", "operation": "DIVIDE" },
+          { "event": "digitPressed", "digit": 0 },
+          { "event": "equalsPressed" }
+        ]
+      },
+      "expected": {
+        "finalState": "error",
+        "errorMessage": "Division by zero"
+      }
+    },
+    {
+      "name": "clear-from-any-state",
+      "description": "Clear pressed from any state returns to idle",
+      "input": {
+        "initialState": "showingResult",
+        "events": [
+          { "event": "clearPressed" }
+        ]
+      },
+      "expected": {
+        "finalState": "idle",
+        "display": "0"
+      }
+    }
+  ],
+  "documentation": {
+    "overview": "This state machine defines the internal behavior of a basic calculator. It tracks the calculator's state through the calculation process: from idle, through entering operands, to showing results or handling errors. Each state has timing constraints to handle user inactivity.",
+    "examples": [
+      {
+        "title": "Simple Addition",
+        "description": "5 + 3 = transitions: idle → enteringFirstOperand → enteringSecondOperand → showingResult"
+      },
+      {
+        "title": "Error Recovery",
+        "description": "Division by zero transitions to error state, clear returns to idle"
+      }
+    ]
+  },
+  "tools": {
+    "plantuml": {
+      "stateDiagram": " [*] --> idle\nidle --> enteringFirstOperand: digitPressed\nenteringFirstOperand --> enteringSecondOperand: operationPressed\nenteringSecondOperand --> showingResult: equalsPressed\nshowingResult --> enteringFirstOperand: digitPressed\nshowingResult --> idle: clearPressed\nenteringSecondOperand --> error: divide by zero\nerror --> idle: clearPressed"
+    }
+  }
+}

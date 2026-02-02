@@ -1,0 +1,218 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "interactive-calculator",
+    "version": "1.0.0",
+    "description": "Interactive calculator supporting basic arithmetic operations with input validation and error handling",
+    "author": "BSIF Project",
+    "license": "MIT"
+  },
+  "semantics": {
+    "type": "interaction",
+    "participants": [
+      {
+        "name": "user",
+        "role": "Initiates calculations and provides operands"
+      },
+      {
+        "name": "calculator",
+        "role": "Performs arithmetic operations and returns results"
+      }
+    ],
+    "messages": [
+      {
+        "from": "user",
+        "to": "calculator",
+        "message": "ADD_REQUEST",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "operand1": { "type": "number" },
+            "operand2": { "type": "number" }
+          }
+        },
+        "guard": "operand1 != null && operand2 != null"
+      },
+      {
+        "from": "calculator",
+        "to": "user",
+        "message": "ADD_RESULT",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "result": { "type": "number" }
+          }
+        }
+      },
+      {
+        "from": "user",
+        "to": "calculator",
+        "message": "SUBTRACT_REQUEST",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "operand1": { "type": "number" },
+            "operand2": { "type": "number" }
+          }
+        },
+        "guard": "operand1 != null && operand2 != null"
+      },
+      {
+        "from": "calculator",
+        "to": "user",
+        "message": "SUBTRACT_RESULT",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "result": { "type": "number" }
+          }
+        }
+      },
+      {
+        "from": "user",
+        "to": "calculator",
+        "message": "MULTIPLY_REQUEST",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "operand1": { "type": "number" },
+            "operand2": { "type": "number" }
+          }
+        },
+        "guard": "operand1 != null && operand2 != null"
+      },
+      {
+        "from": "calculator",
+        "to": "user",
+        "message": "MULTIPLY_RESULT",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "result": { "type": "number" }
+          }
+        }
+      },
+      {
+        "from": "user",
+        "to": "calculator",
+        "message": "DIVIDE_REQUEST",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "operand1": { "type": "number" },
+            "operand2": { "type": "number" }
+          }
+        },
+        "guard": "operand1 != null && operand2 != null && operand2 !== 0"
+      },
+      {
+        "from": "calculator",
+        "to": "user",
+        "message": "DIVIDE_RESULT",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "result": { "type": "number" }
+          }
+        }
+      },
+      {
+        "from": "calculator",
+        "to": "user",
+        "message": "DIVISION_BY_ZERO_ERROR",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "error": { "type": "string" },
+            "message": { "type": "string" }
+          }
+        }
+      },
+      {
+        "from": "user",
+        "to": "calculator",
+        "message": "CLEAR_REQUEST"
+      },
+      {
+        "from": "calculator",
+        "to": "user",
+        "message": "CLEAR_ACK",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "display": { "type": "string" }
+          }
+        }
+      }
+    ],
+    "security": {
+      "authentication": "none",
+      "authorization": null,
+      "confidentiality": "none"
+    }
+  },
+  "tests": [
+    {
+      "name": "addition-operation",
+      "description": "User requests addition of two positive numbers",
+      "input": {
+        "operation": "ADD_REQUEST",
+        "operand1": 5,
+        "operand2": 3
+      },
+      "expected": {
+        "result": 8,
+        "message": "ADD_RESULT"
+      }
+    },
+    {
+      "name": "division-by-zero",
+      "description": "User attempts division by zero, receives error",
+      "input": {
+        "operation": "DIVIDE_REQUEST",
+        "operand1": 10,
+        "operand2": 0
+      },
+      "expected": {
+        "message": "DIVISION_BY_ZERO_ERROR",
+        "error": "DivisionByZero"
+      }
+    },
+    {
+      "name": "clear-operation",
+      "description": "User clears the calculator display",
+      "input": {
+        "operation": "CLEAR_REQUEST"
+      },
+      "expected": {
+        "message": "CLEAR_ACK",
+        "display": "0"
+      }
+    }
+  ],
+  "documentation": {
+    "overview": "This specification defines the interaction protocol for a basic interactive calculator. The calculator supports four arithmetic operations (add, subtract, multiply, divide) and includes proper error handling for edge cases like division by zero. All operations are request/response patterns initiated by the user.",
+    "examples": [
+      {
+        "title": "Adding Two Numbers",
+        "description": "User sends ADD_REQUEST with operand1=5 and operand2=3, calculator responds with ADD_RESULT containing result=8"
+      },
+      {
+        "title": "Division by Zero Handling",
+        "description": "User sends DIVIDE_REQUEST with operand2=0, calculator responds with DIVISION_BY_ZERO_ERROR instead of attempting the operation"
+      },
+      {
+        "title": "Clear Display",
+        "description": "User sends CLEAR_REQUEST, calculator acknowledges with CLEAR_ACK and resets display to '0'"
+      }
+    ]
+  },
+  "tools": {
+    "typescript": {
+      "interface": "interface CalculatorMessage { type: string; payload?: any; }"
+    },
+    "openapi": {
+      "basePath": "/api/calculator"
+    }
+  }
+}
