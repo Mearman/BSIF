@@ -112,7 +112,7 @@ export {
 //==============================================================================
 
 export { parseFile, parseFileSync, parseFileString, parseContent, parseContentWithSourceMap, buildSourceMap, resolveLocation, findPathOffset } from "./parser.js";
-export type { ParseOptions, SourceMap } from "./parser.js";
+export type { ParseOptions, ParseLimits, SourceMap } from "./parser.js";
 
 //==============================================================================
 // Validator

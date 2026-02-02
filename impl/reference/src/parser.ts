@@ -12,15 +12,26 @@ import { bsifDocument } from "./schemas.js";
 // Parse Options
 //==============================================================================
 
+export interface ParseLimits {
+	readonly maxDocumentSize?: number;   // default 10MB
+	readonly maxNestingDepth?: number;   // default 32
+	readonly maxStringLength?: number;   // default 64KB
+}
+
 export interface ParseOptions {
 	readonly encoding?: BufferEncoding;
 	readonly allowUnknownSemantics?: boolean;
+	readonly limits?: ParseLimits;
 }
 
 const defaultOptions: ParseOptions = {
 	encoding: "utf-8",
 	allowUnknownSemantics: false,
 };
+
+const DEFAULT_MAX_DOC_SIZE = 10 * 1024 * 1024; // 10MB
+const DEFAULT_MAX_NESTING = 32;
+const DEFAULT_MAX_STRING_LENGTH = 64 * 1024; // 64KB
 
 //==============================================================================
 // File Detection
@@ -44,7 +55,7 @@ export async function parseFile(
 
 	const content = await readFile(path, { encoding });
 
-	return parseContent(content, path);
+	return parseContent(content, path, options.limits);
 }
 
 export function parseFileSync(
@@ -54,17 +65,27 @@ export function parseFileSync(
 	const { encoding = "utf-8" } = options;
 	const content = readFileSync(path, { encoding });
 
-	return parseContent(content, path);
+	return parseContent(content, path, options.limits);
 }
 
 export function parseFileString(
 	path: string,
 	content: string,
+	limits?: ParseLimits,
 ): BSIFDocument {
-	return parseContent(content, path);
+	return parseContent(content, path, limits);
 }
 
-export function parseContent(content: string, path = "<unknown>"): BSIFDocument {
+export function parseContent(content: string, path = "<unknown>", limits?: ParseLimits): BSIFDocument {
+	// Check document size before parsing
+	const maxDocSize = limits?.maxDocumentSize ?? DEFAULT_MAX_DOC_SIZE;
+	if (content.length > maxDocSize) {
+		throw createError(
+			ErrorCode.InvalidSyntax,
+			`Document size ${content.length} bytes exceeds maximum of ${maxDocSize} bytes`,
+		);
+	}
+
 	const fileType = getFileType(path);
 
 	let parsed: unknown;
@@ -84,7 +105,55 @@ export function parseContent(content: string, path = "<unknown>"): BSIFDocument 
 		);
 	}
 
+	// Check nesting depth and string lengths after parsing
+	const maxNesting = limits?.maxNestingDepth ?? DEFAULT_MAX_NESTING;
+	checkNestingDepth(parsed, maxNesting);
+
+	const maxStringLen = limits?.maxStringLength ?? DEFAULT_MAX_STRING_LENGTH;
+	checkStringLengths(parsed, maxStringLen);
+
 	return validateAndParse(parsed);
+}
+
+function checkNestingDepth(obj: unknown, maxDepth: number, currentDepth = 0): void {
+	if (currentDepth > maxDepth) {
+		throw createError(
+			ErrorCode.ResourceLimitExceeded,
+			`Document nesting depth exceeds maximum of ${maxDepth}`,
+		);
+	}
+	if (typeof obj !== "object" || obj === null) return;
+	if (Array.isArray(obj)) {
+		for (const item of obj) {
+			checkNestingDepth(item, maxDepth, currentDepth + 1);
+		}
+	} else {
+		for (const value of Object.values(obj)) {
+			checkNestingDepth(value, maxDepth, currentDepth + 1);
+		}
+	}
+}
+
+function checkStringLengths(obj: unknown, maxLength: number): void {
+	if (typeof obj === "string") {
+		if (obj.length > maxLength) {
+			throw createError(
+				ErrorCode.ResourceLimitExceeded,
+				`Document contains string length ${obj.length} exceeding maximum of ${maxLength}`,
+			);
+		}
+		return;
+	}
+	if (typeof obj !== "object" || obj === null) return;
+	if (Array.isArray(obj)) {
+		for (const item of obj) {
+			checkStringLengths(item, maxLength);
+		}
+	} else {
+		for (const value of Object.values(obj)) {
+			checkStringLengths(value, maxLength);
+		}
+	}
 }
 
 function parseJson(content: string): unknown {
@@ -219,8 +288,8 @@ export function findPathOffset(sourceMap: SourceMap, path: readonly string[]): n
 	return searchStart;
 }
 
-export function parseContentWithSourceMap(content: string, path = "<unknown>"): { document: BSIFDocument; sourceMap: SourceMap } {
-	const document = parseContent(content, path);
+export function parseContentWithSourceMap(content: string, path = "<unknown>", limits?: ParseLimits): { document: BSIFDocument; sourceMap: SourceMap } {
+	const document = parseContent(content, path, limits);
 	const sourceMap = buildSourceMap(content);
 	return { document, sourceMap };
 }
