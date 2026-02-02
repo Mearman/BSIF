@@ -354,9 +354,70 @@ function validateTemporal(temporal: Temporal): readonly ValidationError[] {
 				);
 			}
 		}
+
+		// Check type compatibility: logical operators require boolean operands
+		errors.push(...checkFormulaTypeCompatibility(property.formula, temporal.variables, ["properties", property.name]));
 	}
 
 	return errors;
+}
+
+// Check type compatibility: logical operators expect boolean operands
+const LOGICAL_OPERATORS = new Set(["not", "and", "or", "implies", "until", "globally", "finally", "next", "always", "eventually"]);
+
+function checkFormulaTypeCompatibility(
+	formula: unknown,
+	variables: Record<string, unknown>,
+	path: readonly string[],
+): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	if (typeof formula !== "object" || formula === null) return errors;
+	if (!("operator" in formula) || typeof formula.operator !== "string") return errors;
+
+	const op = formula.operator;
+
+	if (LOGICAL_OPERATORS.has(op)) {
+		// Check direct variable operands for type compatibility
+		if ("operand" in formula) {
+			errors.push(...checkOperandType(formula.operand, variables, path, op));
+			errors.push(...checkFormulaTypeCompatibility(formula.operand, variables, [...path, op]));
+		}
+		if ("operands" in formula && Array.isArray(formula.operands)) {
+			for (const operand of formula.operands) {
+				errors.push(...checkOperandType(operand, variables, path, op));
+				errors.push(...checkFormulaTypeCompatibility(operand, variables, [...path, op]));
+			}
+		}
+	}
+
+	return errors;
+}
+
+function checkOperandType(
+	operand: unknown,
+	variables: Record<string, unknown>,
+	path: readonly string[],
+	parentOp: string,
+): readonly ValidationError[] {
+	if (typeof operand !== "object" || operand === null) return [];
+	if (!("operator" in operand) || operand.operator !== "variable") return [];
+	if (!("variable" in operand) || typeof operand.variable !== "string") return [];
+
+	const varName = operand.variable;
+	const varType = variables[varName];
+
+	if (typeof varType === "string" && varType !== "boolean") {
+		return [
+			createError(
+				ErrorCode.IncompatibleTypes,
+				`Variable "${varName}" has type "${varType}" but is used as operand of logical operator "${parentOp}" which expects boolean`,
+				{ path: [...path, parentOp, varName] },
+			),
+		];
+	}
+
+	return [];
 }
 
 // Collect all variable references from an LTL formula
@@ -465,6 +526,19 @@ function validateFormulaStructure(formula: unknown, path: readonly string[], dep
 
 function validateConstraints(constraints: Constraints): readonly ValidationError[] {
 	const errors: ValidationError[] = [];
+
+	// Validate target has at least one non-empty reference field
+	const targetFields = [constraints.target.function, constraints.target.method, constraints.target.class, constraints.target.module];
+	const hasNonEmptyTarget = targetFields.some((f) => f !== undefined && f !== "");
+	if (!hasNonEmptyTarget) {
+		errors.push(
+			createError(
+				ErrorCode.InvalidTargetReference,
+				"Target reference must have at least one non-empty field (function, method, class, or module)",
+				{ path: ["target"] },
+			),
+		);
+	}
 
 	// Basic expression syntax validation
 	for (const precondition of constraints.preconditions) {
@@ -585,6 +659,24 @@ function validateEvents(events: Events): readonly ValidationError[] {
 			);
 		} else {
 			referencedEvents.add(handler.event);
+
+			// Check payload type compatibility
+			if (handler.expects !== undefined) {
+				const eventDecl = events.events[handler.event];
+				if (eventDecl?.payload !== undefined) {
+					const eventPayloadType = typeof eventDecl.payload === "string" ? eventDecl.payload : eventDecl.payload.type;
+					const handlerExpectsType = typeof handler.expects === "string" ? handler.expects : handler.expects.type;
+					if (eventPayloadType !== handlerExpectsType) {
+						errors.push(
+							createError(
+								ErrorCode.PayloadTypeMismatch,
+								`Handler expects payload type "${handlerExpectsType}" but event "${handler.event}" declares payload type "${eventPayloadType}"`,
+								{ path: ["handlers", handler.event, "expects"] },
+							),
+						);
+					}
+				}
+			}
 		}
 	}
 
@@ -646,6 +738,26 @@ function validateInteraction(interaction: Interaction): readonly ValidationError
 					{ path: ["messages", message.to] },
 				),
 			);
+		}
+	}
+
+	// Validate message sequence ordering
+	const sequencedMessages = interaction.messages.filter((m) => m.sequence !== undefined);
+	if (sequencedMessages.length > 0) {
+		const seenSequences = new Set<number>();
+		for (const message of sequencedMessages) {
+			if (message.sequence === undefined) continue;
+			const seq = message.sequence;
+			if (seenSequences.has(seq)) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidMessageSequence,
+						`Duplicate message sequence number ${seq}`,
+						{ path: ["messages", String(seq)] },
+					),
+				);
+			}
+			seenSequences.add(seq);
 		}
 	}
 

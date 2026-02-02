@@ -1,0 +1,14 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-bad-sequence"
+	},
+	"semantics": {
+		"messages": [
+			{ "from": "client", "message": "request", "sequence": 1, "to": "server" },
+			{ "from": "server", "message": "response", "sequence": 1, "to": "client" }
+		],
+		"participants": [{ "name": "client" }, { "name": "server" }],
+		"type": "interaction"
+	}
+}

@@ -1,0 +1,20 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-type-mismatch"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": {
+					"operand": { "operator": "variable", "variable": "count" },
+					"operator": "globally"
+				},
+				"name": "always-count"
+			}
+		],
+		"type": "temporal",
+		"variables": { "count": "integer" }
+	}
+}

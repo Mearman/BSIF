@@ -1,0 +1,13 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-payload-mismatch"
+	},
+	"semantics": {
+		"events": {
+			"click": { "payload": "string" }
+		},
+		"handlers": [{ "action": "handle()", "event": "click", "expects": "integer" }],
+		"type": "events"
+	}
+}

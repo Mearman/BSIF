@@ -1,0 +1,12 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-empty-target"
+	},
+	"semantics": {
+		"postconditions": [{ "description": "result positive", "expression": "result > 0" }],
+		"preconditions": [{ "description": "input valid", "expression": "x > 0" }],
+		"target": { "function": "" },
+		"type": "constraints"
+	}
+}

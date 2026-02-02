@@ -224,6 +224,62 @@ describe("Validator", () => {
 		});
 	});
 
+	describe("constraint target reference validation", () => {
+		it("rejects target with all empty fields", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-constraints-empty-target.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const targetError = result.errors.find((e) => e.code === ErrorCode.InvalidTargetReference);
+			assert.ok(targetError, "Should have InvalidTargetReference error");
+		});
+	});
+
+	describe("event payload type mismatch", () => {
+		it("rejects handler with mismatched payload type", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-events-payload-mismatch.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const payloadError = result.errors.find((e) => e.code === ErrorCode.PayloadTypeMismatch);
+			assert.ok(payloadError, "Should have PayloadTypeMismatch error");
+			assert.match(payloadError.message, /integer/);
+			assert.match(payloadError.message, /string/);
+		});
+	});
+
+	describe("message sequence validation", () => {
+		it("rejects duplicate sequence numbers", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-interaction-bad-sequence.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const seqError = result.errors.find((e) => e.code === ErrorCode.InvalidMessageSequence);
+			assert.ok(seqError, "Should have InvalidMessageSequence error");
+		});
+	});
+
+	describe("temporal type compatibility", () => {
+		it("rejects non-boolean variable in logical operator", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-temporal-type-mismatch.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const typeError = result.errors.find((e) => e.code === ErrorCode.IncompatibleTypes);
+			assert.ok(typeError, "Should have IncompatibleTypes error");
+			assert.match(typeError.message, /count/);
+			assert.match(typeError.message, /integer/);
+		});
+	});
+
 	describe("general validation", () => {
 		it("accepts compatible bsif_version 1.0.x", () => {
 			const doc = {
