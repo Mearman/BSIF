@@ -81,6 +81,15 @@ export class Calculator {
    */
   private handleAdd(request: OperationRequest): CalculatorMessage<OperationResult> {
     const { operand1, operand2 } = request;
+
+    // Guard condition: reject null/undefined operands
+    if (operand1 == null || operand2 == null) {
+      return {
+        type: "ERROR",
+        payload: { error: "InvalidOperands", message: "Operands cannot be null or undefined" }
+      } as CalculatorMessage;
+    }
+
     const result = operand1 + operand2;
     this.currentValue = result;
     this.display = result.toString();
