@@ -1,0 +1,20 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "parent-not-found"
+	},
+	"semantics": {
+		"initial": "idle",
+		"states": [
+			{
+				"name": "idle"
+			},
+			{
+				"name": "child",
+				"parent": "nonexistent"
+			}
+		],
+		"transitions": [],
+		"type": "state-machine"
+	}
+}

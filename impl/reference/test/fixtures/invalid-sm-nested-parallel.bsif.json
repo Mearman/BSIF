@@ -1,0 +1,34 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "nested-parallel"
+	},
+	"semantics": {
+		"initial": "outer",
+		"states": [
+			{
+				"name": "outer",
+				"parallel": true
+			},
+			{
+				"name": "inner",
+				"parallel": true,
+				"parent": "outer"
+			},
+			{
+				"name": "child_a",
+				"parent": "inner"
+			},
+			{
+				"name": "child_b",
+				"parent": "inner"
+			},
+			{
+				"name": "sibling",
+				"parent": "outer"
+			}
+		],
+		"transitions": [],
+		"type": "state-machine"
+	}
+}

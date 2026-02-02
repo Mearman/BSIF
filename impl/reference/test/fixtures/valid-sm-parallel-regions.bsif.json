@@ -1,0 +1,52 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "parallel-regions"
+	},
+	"semantics": {
+		"initial": "main",
+		"states": [
+			{
+				"name": "main",
+				"parallel": true
+			},
+			{
+				"name": "region_a",
+				"parent": "main"
+			},
+			{
+				"name": "a1",
+				"parent": "region_a"
+			},
+			{
+				"name": "a2",
+				"parent": "region_a"
+			},
+			{
+				"name": "region_b",
+				"parent": "main"
+			},
+			{
+				"name": "b1",
+				"parent": "region_b"
+			},
+			{
+				"name": "b2",
+				"parent": "region_b"
+			}
+		],
+		"transitions": [
+			{
+				"event": "tick_a",
+				"from": "a1",
+				"to": "a2"
+			},
+			{
+				"event": "tick_b",
+				"from": "b1",
+				"to": "b2"
+			}
+		],
+		"type": "state-machine"
+	}
+}
