@@ -27,8 +27,8 @@
         "payload": {
           "type": "object",
           "properties": {
-            "operand1": { "type": "number" },
-            "operand2": { "type": "number" }
+            "operand1": "integer",
+            "operand2": "integer"
           }
         },
         "guard": "operand1 != null && operand2 != null"
@@ -40,7 +40,7 @@
         "payload": {
           "type": "object",
           "properties": {
-            "result": { "type": "number" }
+            "result": "integer"
           }
         }
       },
@@ -51,8 +51,8 @@
         "payload": {
           "type": "object",
           "properties": {
-            "operand1": { "type": "number" },
-            "operand2": { "type": "number" }
+            "operand1": "integer",
+            "operand2": "integer"
           }
         },
         "guard": "operand1 != null && operand2 != null"
@@ -64,7 +64,7 @@
         "payload": {
           "type": "object",
           "properties": {
-            "result": { "type": "number" }
+            "result": "integer"
           }
         }
       },
@@ -75,8 +75,8 @@
         "payload": {
           "type": "object",
           "properties": {
-            "operand1": { "type": "number" },
-            "operand2": { "type": "number" }
+            "operand1": "integer",
+            "operand2": "integer"
           }
         },
         "guard": "operand1 != null && operand2 != null"
@@ -88,7 +88,7 @@
         "payload": {
           "type": "object",
           "properties": {
-            "result": { "type": "number" }
+            "result": "integer"
           }
         }
       },
@@ -99,8 +99,8 @@
         "payload": {
           "type": "object",
           "properties": {
-            "operand1": { "type": "number" },
-            "operand2": { "type": "number" }
+            "operand1": "integer",
+            "operand2": "integer"
           }
         },
         "guard": "operand1 != null && operand2 != null && operand2 !== 0"
@@ -112,7 +112,7 @@
         "payload": {
           "type": "object",
           "properties": {
-            "result": { "type": "number" }
+            "result": "integer"
           }
         }
       },
@@ -123,8 +123,8 @@
         "payload": {
           "type": "object",
           "properties": {
-            "error": { "type": "string" },
-            "message": { "type": "string" }
+            "error": "string",
+            "message": "string"
           }
         }
       },
@@ -140,14 +140,13 @@
         "payload": {
           "type": "object",
           "properties": {
-            "display": { "type": "string" }
+            "display": "string"
           }
         }
       }
     ],
     "security": {
       "authentication": "none",
-      "authorization": null,
       "confidentiality": "none"
     }
   },
@@ -156,37 +155,48 @@
       "name": "addition-operation",
       "description": "User requests addition of two positive numbers",
       "input": {
-        "operation": "ADD_REQUEST",
-        "operand1": 5,
-        "operand2": 3
+        "type": "ADD_REQUEST",
+        "payload": {
+          "operand1": 5,
+          "operand2": 3
+        }
       },
       "expected": {
-        "result": 8,
-        "message": "ADD_RESULT"
+        "type": "ADD_RESULT",
+        "payload": {
+          "result": 8
+        }
       }
     },
     {
       "name": "division-by-zero",
       "description": "User attempts division by zero, receives error",
       "input": {
-        "operation": "DIVIDE_REQUEST",
-        "operand1": 10,
-        "operand2": 0
+        "type": "DIVIDE_REQUEST",
+        "payload": {
+          "operand1": 10,
+          "operand2": 0
+        }
       },
       "expected": {
-        "message": "DIVISION_BY_ZERO_ERROR",
-        "error": "DivisionByZero"
+        "type": "DIVISION_BY_ZERO_ERROR",
+        "payload": {
+          "error": "DivisionByZero",
+          "message": "Cannot divide by zero"
+        }
       }
     },
     {
       "name": "clear-operation",
       "description": "User clears the calculator display",
       "input": {
-        "operation": "CLEAR_REQUEST"
+        "type": "CLEAR_REQUEST"
       },
       "expected": {
-        "message": "CLEAR_ACK",
-        "display": "0"
+        "type": "CLEAR_ACK",
+        "payload": {
+          "display": "0"
+        }
       }
     }
   ],
