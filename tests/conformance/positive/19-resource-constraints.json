@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "resource-constraints-test",
+    "description": "Tests resource constraints on constraints"
+  },
+  "semantics": {
+    "type": "constraints",
+    "target": { "function": "processData" },
+    "preconditions": [],
+    "postconditions": [
+      { "description": "Returns processed data", "expression": "result != null" }
+    ],
+    "resources": {
+      "cpu": { "max": 80, "unit": "percent" },
+      "memory": { "max": 512, "unit": "mb" },
+      "io": { "maxBytesPerSecond": 1000000 }
+    }
+  }
+}

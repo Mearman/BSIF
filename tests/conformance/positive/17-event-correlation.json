@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "event-correlation-test",
+    "description": "Tests event correlation keys"
+  },
+  "semantics": {
+    "type": "events",
+    "events": {
+      "order-placed": {
+        "payload": "string",
+        "correlationKey": "orderId"
+      },
+      "payment-processed": {
+        "payload": { "type": "object", "properties": { "amount": "integer" } }
+      }
+    },
+    "handlers": [
+      { "event": "order-placed", "action": "processOrder()" }
+    ]
+  }
+}

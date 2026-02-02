@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.1",
+    "name": "version-compat-test",
+    "description": "Tests compatible patch version"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "idle" }
+    ],
+    "transitions": [],
+    "initial": "idle"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "ctl-temporal-test",
+    "description": "Tests CTL logic with explicit path quantifiers"
+  },
+  "semantics": {
+    "type": "temporal",
+    "logic": "ctl",
+    "variables": {
+      "safe": "boolean",
+      "requested": "boolean"
+    },
+    "properties": [
+      {
+        "name": "mutual-exclusion",
+        "formula": {
+          "operator": "forall-globally",
+          "operand": {
+            "operator": "implies",
+            "operands": [
+              { "operator": "variable", "variable": "requested" },
+              { "operator": "not", "operand": { "operator": "variable", "variable": "safe" } }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

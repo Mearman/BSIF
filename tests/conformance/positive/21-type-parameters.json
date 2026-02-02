@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "type-parameters-test",
+    "description": "Tests generic type parameters"
+  },
+  "semantics": {
+    "type": "temporal",
+    "logic": "ltl",
+    "variables": {
+      "container": {
+        "type": "object",
+        "properties": {
+          "value": "string"
+        },
+        "typeParameters": [
+          { "name": "T" },
+          { "name": "U", "default": "integer" }
+        ]
+      }
+    },
+    "properties": [
+      {
+        "name": "test",
+        "formula": {
+          "operator": "literal",
+          "value": true
+        }
+      }
+    ]
+  }
+}

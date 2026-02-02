@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "sync-primitives-test",
+    "description": "Tests synchronization primitives on states"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      {
+        "name": "locked",
+        "sync": [
+          { "type": "mutex", "name": "resource-lock" }
+        ]
+      },
+      {
+        "name": "communicating",
+        "sync": [
+          { "type": "channel", "name": "data-pipe", "capacity": 10 }
+        ]
+      },
+      {
+        "name": "waiting",
+        "sync": [
+          { "type": "barrier", "name": "phase-sync" }
+        ]
+      }
+    ],
+    "transitions": [],
+    "initial": "locked"
+  }
+}

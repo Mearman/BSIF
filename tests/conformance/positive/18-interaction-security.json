@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "interaction-security-test",
+    "description": "Tests interaction security properties"
+  },
+  "semantics": {
+    "type": "interaction",
+    "participants": [
+      { "name": "client", "role": "initiator" },
+      { "name": "server", "role": "responder" }
+    ],
+    "messages": [
+      { "from": "client", "to": "server", "message": "request" }
+    ],
+    "security": {
+      "authentication": "token",
+      "authorization": {
+        "roles": ["admin", "user"]
+      },
+      "confidentiality": "encrypted"
+    }
+  }
+}
