@@ -718,6 +718,174 @@ describe("Validator", () => {
 		});
 	});
 
+	describe("tool mapping validation", () => {
+		it("accepts document with valid tool mappings", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "valid-with-tools.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const toolError = result.errors.find((e) => e.code === ErrorCode.EmptyToolMapping);
+			assert.strictEqual(toolError, undefined, "Should not have EmptyToolMapping warning");
+		});
+
+		it("warns about empty tool mappings", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-tools-empty-mapping.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const toolError = result.errors.find((e) => e.code === ErrorCode.EmptyToolMapping);
+			assert.ok(toolError, "Should have EmptyToolMapping warning");
+			assert.strictEqual(toolError.severity, "warning");
+		});
+
+		it("accepts document without tools section", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states: [{ name: "idle" }],
+					transitions: [],
+					initial: "idle",
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const toolError = result.errors.find((e) => e.code === ErrorCode.EmptyToolMapping);
+			assert.strictEqual(toolError, undefined, "Should not have EmptyToolMapping warning");
+		});
+	});
+
+	describe("advanced data type validation", () => {
+		it("accepts array type in variable declarations", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "valid-temporal-array-type.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			// Should pass (only possible CTL/structural warnings, no type errors)
+			const typeErrors = result.errors.filter(
+				(e) => e.code === ErrorCode.InvalidFieldValue || e.code === ErrorCode.DuplicateEnumValue,
+			);
+			assert.strictEqual(typeErrors.length, 0, "Should not have type-related errors");
+		});
+
+		it("accepts array type in event payloads", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "valid-events-array-payload.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const typeErrors = result.errors.filter((e) => e.code === ErrorCode.InvalidFieldValue);
+			assert.strictEqual(typeErrors.length, 0, "Should not have schema errors for array payload");
+		});
+
+		it("accepts enum type in variable declarations", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "valid-temporal-enum-type.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const enumError = result.errors.find((e) => e.code === ErrorCode.DuplicateEnumValue);
+			assert.strictEqual(enumError, undefined, "Should not have DuplicateEnumValue error");
+		});
+
+		it("rejects enum with duplicate values", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-temporal-duplicate-enum.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const enumError = result.errors.find((e) => e.code === ErrorCode.DuplicateEnumValue);
+			assert.ok(enumError, "Should have DuplicateEnumValue error");
+			assert.match(enumError.message, /active/);
+		});
+
+		it("warns about undefined type references", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-temporal-bad-type-ref.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const refError = result.errors.find((e) => e.code === ErrorCode.UndefinedTypeReference);
+			assert.ok(refError, "Should have UndefinedTypeReference warning");
+			assert.strictEqual(refError.severity, "warning");
+			assert.match(refError.message, /NonExistentType/);
+		});
+
+		it("accepts valid primitive type references in object properties", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "temporal",
+					logic: "ltl",
+					variables: {
+						active: "boolean",
+						data: {
+							type: "object",
+							properties: {
+								name: "string",
+								count: "integer",
+								flag: "boolean",
+							},
+						},
+					},
+					properties: [
+						{
+							name: "always_active",
+							formula: { operator: "globally", operand: { operator: "variable", variable: "active" } },
+						},
+					],
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const refError = result.errors.find((e) => e.code === ErrorCode.UndefinedTypeReference);
+			assert.strictEqual(refError, undefined, "Should not have UndefinedTypeReference for primitives");
+		});
+
+		it("accepts nested array type (array of arrays)", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "temporal",
+					logic: "ltl",
+					variables: {
+						active: "boolean",
+						matrix: {
+							type: "array",
+							items: {
+								type: "array",
+								items: "integer",
+							},
+						},
+					},
+					properties: [
+						{
+							name: "always_active",
+							formula: { operator: "globally", operand: { operator: "variable", variable: "active" } },
+						},
+					],
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const schemaErrors = result.errors.filter((e) => e.code === ErrorCode.InvalidFieldValue);
+			assert.strictEqual(schemaErrors.length, 0, "Should accept nested array types");
+		});
+	});
+
 	describe("circular parent references", () => {
 		it("detects circular parent references", async () => {
 			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-circular-parent.bsif.json");
