@@ -9,6 +9,13 @@ export type {
 	BSIFMetadata as Metadata,
 	// Timing
 	TimingConstraint,
+	// Expressions
+	Expression,
+	ExpressionAST,
+	ExpressionLiteral,
+	ExpressionVariable,
+	ExpressionBinary,
+	ExpressionUnary,
 	// State Machine
 	StateMachine,
 	State,
@@ -72,6 +79,17 @@ export {
 	bsifMetadata,
 	bsifDocument,
 	timingConstraint,
+	// Expression schemas and guards
+	expression,
+	expressionAST,
+	expressionLiteral,
+	expressionVariable,
+	expressionBinary,
+	expressionUnary,
+	isExpression,
+	isStringExpression,
+	isASTExpression,
+	// State machine
 	state,
 	stateMachine,
 	temporal,
