@@ -108,6 +108,7 @@ export interface ValidationError {
 	readonly path?: readonly string[];
 	readonly line?: number;
 	readonly column?: number;
+	readonly file?: string;
 	readonly suggestion?: string;
 }
 
@@ -128,6 +129,7 @@ export function createError(
 		path?: readonly string[];
 		line?: number;
 		column?: number;
+		file?: string;
 		suggestion?: string;
 	},
 ): ValidationError {
@@ -163,6 +165,11 @@ export function formatError(error: ValidationError): string {
 		if (error.column !== undefined) {
 			result += `, column ${error.column}`;
 		}
+		if (error.file !== undefined) {
+			result += ` in ${error.file}`;
+		}
+	} else if (error.file !== undefined) {
+		result += `\n  in ${error.file}`;
 	}
 
 	if (error.suggestion !== undefined) {
