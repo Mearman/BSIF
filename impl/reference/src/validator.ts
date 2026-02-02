@@ -33,9 +33,15 @@ import {
 // Validation Options
 //==============================================================================
 
+export interface ResourceLimits {
+	readonly maxNestingDepth?: number;
+	readonly maxStateCount?: number;
+}
+
 export interface ValidationOptions {
 	readonly checkSemantics?: boolean;
 	readonly checkCircularReferences?: boolean;
+	readonly resourceLimits?: ResourceLimits;
 }
 
 const defaultOptions: ValidationOptions = {
@@ -69,7 +75,7 @@ export function validate(document: unknown, options: ValidationOptions = default
 
 	// Stage 2: Semantic validation
 	if (options.checkSemantics) {
-		const semanticErrors = validateSemantics(doc);
+		const semanticErrors = validateSemantics(doc, options.resourceLimits);
 
 		if (semanticErrors.length > 0) {
 			return createFailure(semanticErrors);
@@ -91,11 +97,11 @@ export async function validateFile(
 // Semantic Validation
 //==============================================================================
 
-function validateSemantics(doc: BSIFDocument): readonly ValidationError[] {
+function validateSemantics(doc: BSIFDocument, resourceLimits?: ResourceLimits): readonly ValidationError[] {
 	const errors: ValidationError[] = [];
 
 	// Add general validation
-	errors.push(...validateGeneral(doc));
+	errors.push(...validateGeneral(doc, resourceLimits));
 
 	// Dispatch to type-specific validators
 	if (isStateMachine(doc.semantics)) {
@@ -704,7 +710,7 @@ function validateHybrid(hybrid: Hybrid): readonly ValidationError[] {
 // General Validation
 //==============================================================================
 
-function validateGeneral(doc: BSIFDocument): readonly ValidationError[] {
+function validateGeneral(doc: BSIFDocument, resourceLimits?: ResourceLimits): readonly ValidationError[] {
 	const errors: ValidationError[] = [];
 
 	// Validate BSIF version compatibility
@@ -726,7 +732,65 @@ function validateGeneral(doc: BSIFDocument): readonly ValidationError[] {
 		errors.push(...checkDuplicateStateNames(doc.semantics));
 	}
 
+	// Resource limits validation
+	errors.push(...validateResourceLimits(doc, resourceLimits));
+
 	return errors;
+}
+
+const DEFAULT_MAX_NESTING_DEPTH = 32;
+const DEFAULT_MAX_STATE_COUNT = 1000;
+
+function validateResourceLimits(doc: BSIFDocument, limits?: ResourceLimits): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	const maxNestingDepth = limits?.maxNestingDepth ?? DEFAULT_MAX_NESTING_DEPTH;
+	const maxStateCount = limits?.maxStateCount ?? DEFAULT_MAX_STATE_COUNT;
+
+	// Check state count
+	if (isStateMachine(doc.semantics) && doc.semantics.states.length > maxStateCount) {
+		errors.push(
+			createError(
+				ErrorCode.ResourceLimitExceeded,
+				`State count ${doc.semantics.states.length} exceeds maximum of ${maxStateCount}`,
+				{ severity: "warning", path: ["semantics", "states"] },
+			),
+		);
+	}
+
+	// Check nesting depth
+	const depth = measureNestingDepth(doc, 0);
+	if (depth > maxNestingDepth) {
+		errors.push(
+			createError(
+				ErrorCode.NestingDepthExceeded,
+				`Document nesting depth ${depth} exceeds maximum of ${maxNestingDepth}`,
+				{ severity: "warning" },
+			),
+		);
+	}
+
+	return errors;
+}
+
+function measureNestingDepth(value: unknown, currentDepth: number): number {
+	if (typeof value !== "object" || value === null) {
+		return currentDepth;
+	}
+
+	let maxDepth = currentDepth;
+
+	if (Array.isArray(value)) {
+		for (const item of value) {
+			maxDepth = Math.max(maxDepth, measureNestingDepth(item, currentDepth + 1));
+		}
+	} else {
+		for (const [, child] of Object.entries(value)) {
+			maxDepth = Math.max(maxDepth, measureNestingDepth(child, currentDepth + 1));
+		}
+	}
+
+	return maxDepth;
 }
 
 function checkDuplicateStateNames(sm: StateMachine): readonly ValidationError[] {

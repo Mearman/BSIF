@@ -105,7 +105,7 @@ export type { ParseOptions } from "./parser.js";
 //==============================================================================
 
 export { validate, validateFile } from "./validator.js";
-export type { ValidationOptions } from "./validator.js";
+export type { ValidationOptions, ResourceLimits } from "./validator.js";
 
 //==============================================================================
 // CLI

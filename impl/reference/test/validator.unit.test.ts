@@ -347,4 +347,25 @@ describe("Validator", () => {
 			assert.match(conflictError.message, /idle/);
 		});
 	});
+
+	describe("general validation", () => {
+		it("warns when state count exceeds resource limit", () => {
+			const states = Array.from({ length: 5 }, (_, i) => ({ name: `s${i}` }));
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states,
+					transitions: [],
+					initial: "s0",
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true, resourceLimits: { maxStateCount: 3 } });
+
+			const limitError = result.errors.find((e) => e.code === ErrorCode.ResourceLimitExceeded);
+			assert.ok(limitError, "Should have ResourceLimitExceeded warning");
+			assert.strictEqual(limitError.severity, "warning");
+		});
+	});
 });
