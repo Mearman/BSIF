@@ -1,22 +1,52 @@
 {
-  "$schema": "https://json-schema.org/draft/2024-12/schema",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bsif-spec.io/schemas/bsif.json",
   "title": "BSIF Behavioral Specification",
-  "description": "Behavioral Specification Interchange Format (BSIF) schema for defining language-agnostic program behavior specifications",
+  "description": "Behavioral Specification Interchange Format (BSIF) schema for defining language-agnostic program behavior specifications. Includes all MUST and SHOULD level features from BSIF v1.0.0.",
   "type": "object",
-  "required": ["metadata", "semantics"],
+  "required": [
+    "metadata",
+    "semantics"
+  ],
   "properties": {
     "metadata": {
       "$ref": "#/$defs/metadata"
     },
     "semantics": {
-      "$ref": "#/$defs/semantics"
+      "description": "Semantics section - one of the behavioral specification types",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/stateMachine"
+        },
+        {
+          "$ref": "#/$defs/temporal"
+        },
+        {
+          "$ref": "#/$defs/constraints"
+        },
+        {
+          "$ref": "#/$defs/events"
+        },
+        {
+          "$ref": "#/$defs/interaction"
+        },
+        {
+          "$ref": "#/$defs/hybrid"
+        }
+      ]
     },
     "tools": {
-      "$ref": "#/$defs/tools"
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256,
+        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$"
+      },
+      "additionalProperties": {}
     },
     "tests": {
-      "$ref": "#/$defs/tests"
+      "$ref": "#/$defs/testCase"
     },
     "documentation": {
       "$ref": "#/$defs/documentation"
@@ -25,534 +55,4182 @@
   "$defs": {
     "metadata": {
       "type": "object",
-      "description": "Metadata section for BSIF document identification and versioning",
-      "required": ["bsif_version", "name"],
       "properties": {
         "bsif_version": {
           "type": "string",
-          "description": "BSIF format version (SemVer 2.0.0 compatible)",
           "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
         },
         "name": {
           "type": "string",
-          "description": "Specification name (unique identifier)",
           "minLength": 1,
           "maxLength": 256
         },
         "version": {
           "type": "string",
-          "description": "Specification version (SemVer 2.0.0 compatible)",
           "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
         },
         "description": {
           "type": "string",
-          "description": "Human-readable description",
           "maxLength": 4096
         },
         "author": {
           "type": "string",
-          "description": "Author or organization",
           "maxLength": 512
         },
         "license": {
           "type": "string",
-          "description": "SPDX license identifier",
           "maxLength": 64
         },
         "references": {
+          "maxItems": 100,
           "type": "array",
-          "description": "Related specifications or URIs",
           "items": {
             "type": "string",
             "format": "uri"
-          },
-          "maxItems": 100
+          }
         }
-      }
-    },
-    "semantics": {
-      "description": "Semantics section - one of the behavioral specification types",
-      "oneOf": [
-        { "$ref": "#/$defs/stateMachine" },
-        { "$ref": "#/$defs/temporal" },
-        { "$ref": "#/$defs/constraints" },
-        { "$ref": "#/$defs/events" },
-        { "$ref": "#/$defs/interaction" },
-        { "$ref": "#/$defs/hybrid" }
-      ]
+      },
+      "required": [
+        "bsif_version",
+        "name"
+      ],
+      "additionalProperties": false
     },
     "stateMachine": {
       "type": "object",
-      "required": ["type", "states", "transitions", "initial"],
       "properties": {
         "type": {
+          "type": "string",
           "const": "state-machine"
         },
         "states": {
+          "minItems": 1,
           "type": "array",
-          "description": "Array of state definitions",
-          "items": { "$ref": "#/$defs/state" },
-          "minItems": 1
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "entry": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "exit": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "parent": {
+                "type": "string"
+              },
+              "parallel": {
+                "type": "boolean"
+              },
+              "timing": {
+                "type": "object",
+                "properties": {
+                  "deadline": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "timeout": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "period": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "unit": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": "ms"
+                      },
+                      {
+                        "type": "string",
+                        "const": "s"
+                      },
+                      {
+                        "type": "string",
+                        "const": "us"
+                      },
+                      {
+                        "type": "string",
+                        "const": "ns"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              "sync": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "mutex"
+                        },
+                        {
+                          "type": "string",
+                          "const": "barrier"
+                        },
+                        {
+                          "type": "string",
+                          "const": "channel"
+                        },
+                        {
+                          "type": "string",
+                          "const": "semaphore"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "capacity": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          }
         },
         "transitions": {
+          "minItems": 0,
           "type": "array",
-          "description": "Array of transition definitions",
-          "items": { "$ref": "#/$defs/transition" },
-          "minItems": 0
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1
+              },
+              "to": {
+                "type": "string",
+                "minLength": 1
+              },
+              "event": {
+                "type": "string"
+              },
+              "guard": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "action": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "timing": {
+                "type": "object",
+                "properties": {
+                  "deadline": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "timeout": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "period": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "unit": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": "ms"
+                      },
+                      {
+                        "type": "string",
+                        "const": "s"
+                      },
+                      {
+                        "type": "string",
+                        "const": "us"
+                      },
+                      {
+                        "type": "string",
+                        "const": "ns"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ],
+            "additionalProperties": false
+          }
         },
         "initial": {
           "type": "string",
-          "description": "ID of initial state",
           "minLength": 1
         },
         "final": {
           "type": "array",
-          "description": "IDs of final/accepting states",
           "items": {
             "type": "string",
             "minLength": 1
           }
         }
-      }
+      },
+      "required": [
+        "type",
+        "states",
+        "transitions",
+        "initial"
+      ],
+      "additionalProperties": false
     },
     "state": {
       "type": "object",
-      "required": ["name"],
       "properties": {
         "name": {
           "type": "string",
-          "description": "Unique state identifier",
           "minLength": 1,
           "maxLength": 256
         },
         "entry": {
           "type": "string",
-          "description": "Action on state entry (tool-specific expression)",
           "maxLength": 4096
         },
         "exit": {
           "type": "string",
-          "description": "Action on state exit (tool-specific expression)",
           "maxLength": 4096
         },
         "parent": {
-          "type": "string",
-          "description": "Parent state for hierarchical states",
-          "minLength": 1
+          "type": "string"
         },
         "parallel": {
-          "type": "boolean",
-          "description": "Enable parallel regions"
+          "type": "boolean"
+        },
+        "timing": {
+          "type": "object",
+          "properties": {
+            "deadline": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "timeout": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "period": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "unit": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "ms"
+                },
+                {
+                  "type": "string",
+                  "const": "s"
+                },
+                {
+                  "type": "string",
+                  "const": "us"
+                },
+                {
+                  "type": "string",
+                  "const": "ns"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "sync": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "const": "mutex"
+                  },
+                  {
+                    "type": "string",
+                    "const": "barrier"
+                  },
+                  {
+                    "type": "string",
+                    "const": "channel"
+                  },
+                  {
+                    "type": "string",
+                    "const": "semaphore"
+                  }
+                ]
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "capacity": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "type",
+              "name"
+            ],
+            "additionalProperties": false
+          }
         }
-      }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
     },
     "transition": {
       "type": "object",
-      "required": ["from", "to"],
       "properties": {
         "from": {
           "type": "string",
-          "description": "Source state ID",
           "minLength": 1
         },
         "to": {
           "type": "string",
-          "description": "Destination state ID",
           "minLength": 1
         },
         "event": {
-          "type": "string",
-          "description": "Trigger event",
-          "minLength": 1
+          "type": "string"
         },
         "guard": {
           "type": "string",
-          "description": "Boolean condition (tool-specific expression)",
           "maxLength": 4096
         },
         "action": {
           "type": "string",
-          "description": "Transition action (tool-specific expression)",
           "maxLength": 4096
+        },
+        "timing": {
+          "type": "object",
+          "properties": {
+            "deadline": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "timeout": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "period": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "unit": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "ms"
+                },
+                {
+                  "type": "string",
+                  "const": "s"
+                },
+                {
+                  "type": "string",
+                  "const": "us"
+                },
+                {
+                  "type": "string",
+                  "const": "ns"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
         }
-      }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "additionalProperties": false
     },
     "temporal": {
       "type": "object",
-      "required": ["type", "logic", "variables", "properties"],
       "properties": {
         "type": {
+          "type": "string",
           "const": "temporal"
         },
         "logic": {
-          "type": "string",
-          "enum": ["ltl", "ctl"],
-          "description": "Type of temporal logic"
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "ltl"
+            },
+            {
+              "type": "string",
+              "const": "ctl"
+            }
+          ]
         },
         "variables": {
           "type": "object",
-          "description": "Variable declarations",
+          "propertyNames": {
+            "type": "string"
+          },
           "additionalProperties": {
-            "oneOf": [
-              { "const": "boolean" },
-              { "const": "integer" },
-              { "const": "string" },
-              { "$ref": "#/$defs/objectType" }
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "const": "boolean"
+                  },
+                  {
+                    "type": "string",
+                    "const": "integer"
+                  },
+                  {
+                    "type": "string",
+                    "const": "string"
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "object"
+                  },
+                  "properties": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "boolean"
+                            },
+                            {
+                              "type": "string",
+                              "const": "integer"
+                            },
+                            {
+                              "type": "string",
+                              "const": "string"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "typeParameters": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256
+                        },
+                        "constraint": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "const": "any"
+                            }
+                          ]
+                        },
+                        "default": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "boolean"
+                            },
+                            {
+                              "type": "string",
+                              "const": "integer"
+                            },
+                            {
+                              "type": "string",
+                              "const": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "type",
+                  "properties"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "$ref": "#/$defs/__schema0"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "enum"
+                  },
+                  "values": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "type",
+                  "values"
+                ],
+                "additionalProperties": false
+              }
             ]
           }
         },
         "properties": {
+          "minItems": 1,
           "type": "array",
-          "description": "Temporal properties",
-          "items": { "$ref": "#/$defs/property" },
-          "minItems": 1
-        }
-      }
-    },
-    "objectType": {
-      "type": "object",
-      "required": ["type", "properties"],
-      "properties": {
-        "type": {
-          "const": "object"
-        },
-        "properties": {
-          "type": "object",
-          "additionalProperties": {
-            "oneOf": [
-              { "const": "boolean" },
-              { "const": "integer" },
-              { "const": "string" },
-              { "type": "string" }
-            ]
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "formula": {
+                "$ref": "#/$defs/__schema1"
+              }
+            },
+            "required": [
+              "name",
+              "formula"
+            ],
+            "additionalProperties": false
           }
+        }
+      },
+      "required": [
+        "type",
+        "logic",
+        "variables",
+        "properties"
+      ],
+      "additionalProperties": false,
+      "$defs": {
+        "__schema0": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "array"
+            },
+            "items": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "boolean"
+                    },
+                    {
+                      "type": "string",
+                      "const": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "string"
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "object"
+                    },
+                    "properties": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "typeParameters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          },
+                          "constraint": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "boolean"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "integer"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "string"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "const": "any"
+                              }
+                            ]
+                          },
+                          "default": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "properties"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "enum"
+                    },
+                    "values": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "values"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ],
+          "additionalProperties": false
+        },
+        "__schema1": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "operator": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "not"
+                    },
+                    {
+                      "type": "string",
+                      "const": "globally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "finally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "next"
+                    },
+                    {
+                      "type": "string",
+                      "const": "always"
+                    },
+                    {
+                      "type": "string",
+                      "const": "eventually"
+                    },
+                    {
+                      "type": "string",
+                      "const": "forall-next"
+                    },
+                    {
+                      "type": "string",
+                      "const": "exists-next"
+                    },
+                    {
+                      "type": "string",
+                      "const": "forall-globally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "exists-globally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "forall-finally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "exists-finally"
+                    }
+                  ]
+                },
+                "operand": {
+                  "$ref": "#/$defs/__schema1"
+                }
+              },
+              "required": [
+                "operator",
+                "operand"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "operator": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "and"
+                    },
+                    {
+                      "type": "string",
+                      "const": "or"
+                    },
+                    {
+                      "type": "string",
+                      "const": "implies"
+                    },
+                    {
+                      "type": "string",
+                      "const": "until"
+                    },
+                    {
+                      "type": "string",
+                      "const": "forall-until"
+                    },
+                    {
+                      "type": "string",
+                      "const": "exists-until"
+                    }
+                  ]
+                },
+                "operands": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/__schema1"
+                  }
+                }
+              },
+              "required": [
+                "operator",
+                "operands"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "operator": {
+                  "type": "string",
+                  "const": "variable"
+                },
+                "variable": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "operator",
+                "variable"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "operator": {
+                  "type": "string",
+                  "const": "literal"
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "operator",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          ]
         }
       }
     },
     "property": {
       "type": "object",
-      "required": ["name", "formula"],
       "properties": {
         "name": {
-          "type": "string",
-          "description": "Property name",
-          "minLength": 1
+          "type": "string"
         },
-        "formula": { "$ref": "#/$defs/ltlFormula" }
-      }
-    },
-    "ltlFormula": {
-      "oneOf": [
-        { "$ref": "#/$defs/unaryFormula" },
-        { "$ref": "#/$defs/binaryFormula" },
-        { "$ref": "#/$defs/variableRef" },
-        { "$ref": "#/$defs/literalValue" }
-      ]
-    },
-    "unaryFormula": {
-      "type": "object",
-      "required": ["operator", "operand"],
-      "properties": {
-        "operator": {
-          "type": "string",
-          "enum": ["not", "globally", "finally", "next", "always", "eventually"]
-        },
-        "operand": { "$ref": "#/$defs/ltlFormula" }
-      }
-    },
-    "binaryFormula": {
-      "type": "object",
-      "required": ["operator", "operands"],
-      "properties": {
-        "operator": {
-          "type": "string",
-          "enum": ["and", "or", "implies", "until"]
-        },
-        "operands": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/ltlFormula" },
-          "minItems": 2
+        "formula": {
+          "$ref": "#/$defs/__schema0"
         }
-      }
-    },
-    "variableRef": {
-      "type": "object",
-      "required": ["operator", "variable"],
-      "properties": {
-        "operator": {
-          "const": "variable"
-        },
-        "variable": {
-          "type": "string",
-          "minLength": 1
-        }
-      }
-    },
-    "literalValue": {
-      "type": "object",
-      "required": ["operator", "value"],
-      "properties": {
-        "operator": {
-          "const": "literal"
-        },
-        "value": {
-          "oneOf": [
-            { "type": "boolean" },
-            { "type": "integer" },
-            { "type": "string" }
+      },
+      "required": [
+        "name",
+        "formula"
+      ],
+      "additionalProperties": false,
+      "$defs": {
+        "__schema0": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "operator": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "not"
+                    },
+                    {
+                      "type": "string",
+                      "const": "globally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "finally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "next"
+                    },
+                    {
+                      "type": "string",
+                      "const": "always"
+                    },
+                    {
+                      "type": "string",
+                      "const": "eventually"
+                    },
+                    {
+                      "type": "string",
+                      "const": "forall-next"
+                    },
+                    {
+                      "type": "string",
+                      "const": "exists-next"
+                    },
+                    {
+                      "type": "string",
+                      "const": "forall-globally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "exists-globally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "forall-finally"
+                    },
+                    {
+                      "type": "string",
+                      "const": "exists-finally"
+                    }
+                  ]
+                },
+                "operand": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              },
+              "required": [
+                "operator",
+                "operand"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "operator": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "and"
+                    },
+                    {
+                      "type": "string",
+                      "const": "or"
+                    },
+                    {
+                      "type": "string",
+                      "const": "implies"
+                    },
+                    {
+                      "type": "string",
+                      "const": "until"
+                    },
+                    {
+                      "type": "string",
+                      "const": "forall-until"
+                    },
+                    {
+                      "type": "string",
+                      "const": "exists-until"
+                    }
+                  ]
+                },
+                "operands": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              },
+              "required": [
+                "operator",
+                "operands"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "operator": {
+                  "type": "string",
+                  "const": "variable"
+                },
+                "variable": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "operator",
+                "variable"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "operator": {
+                  "type": "string",
+                  "const": "literal"
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "operator",
+                "value"
+              ],
+              "additionalProperties": false
+            }
           ]
         }
       }
     },
+    "ltlFormula": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "operator": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "not"
+                },
+                {
+                  "type": "string",
+                  "const": "globally"
+                },
+                {
+                  "type": "string",
+                  "const": "finally"
+                },
+                {
+                  "type": "string",
+                  "const": "next"
+                },
+                {
+                  "type": "string",
+                  "const": "always"
+                },
+                {
+                  "type": "string",
+                  "const": "eventually"
+                },
+                {
+                  "type": "string",
+                  "const": "forall-next"
+                },
+                {
+                  "type": "string",
+                  "const": "exists-next"
+                },
+                {
+                  "type": "string",
+                  "const": "forall-globally"
+                },
+                {
+                  "type": "string",
+                  "const": "exists-globally"
+                },
+                {
+                  "type": "string",
+                  "const": "forall-finally"
+                },
+                {
+                  "type": "string",
+                  "const": "exists-finally"
+                }
+              ]
+            },
+            "operand": {
+              "$ref": "#"
+            }
+          },
+          "required": [
+            "operator",
+            "operand"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "operator": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "and"
+                },
+                {
+                  "type": "string",
+                  "const": "or"
+                },
+                {
+                  "type": "string",
+                  "const": "implies"
+                },
+                {
+                  "type": "string",
+                  "const": "until"
+                },
+                {
+                  "type": "string",
+                  "const": "forall-until"
+                },
+                {
+                  "type": "string",
+                  "const": "exists-until"
+                }
+              ]
+            },
+            "operands": {
+              "type": "array",
+              "items": {
+                "$ref": "#"
+              }
+            }
+          },
+          "required": [
+            "operator",
+            "operands"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "operator": {
+              "type": "string",
+              "const": "variable"
+            },
+            "variable": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "operator",
+            "variable"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "operator": {
+              "type": "string",
+              "const": "literal"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": [
+            "operator",
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
     "constraints": {
       "type": "object",
-      "required": ["type", "target", "preconditions", "postconditions"],
       "properties": {
         "type": {
+          "type": "string",
           "const": "constraints"
         },
         "target": {
           "type": "object",
-          "description": "Target function/method reference",
-          "minProperties": 1,
           "properties": {
-            "function": { "type": "string", "minLength": 1 },
-            "method": { "type": "string", "minLength": 1 },
-            "class": { "type": "string", "minLength": 1 },
-            "module": { "type": "string", "minLength": 1 }
-          }
+            "function": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string"
+            },
+            "class": {
+              "type": "string"
+            },
+            "module": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         },
         "preconditions": {
           "type": "array",
-          "description": "Preconditions",
-          "items": { "$ref": "#/$defs/constraint" },
-          "minItems": 0
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "expression": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "description",
+              "expression"
+            ],
+            "additionalProperties": false
+          }
         },
         "postconditions": {
           "type": "array",
-          "description": "Postconditions",
-          "items": { "$ref": "#/$defs/constraint" },
-          "minItems": 0
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "expression": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "description",
+              "expression"
+            ],
+            "additionalProperties": false
+          }
         },
         "invariants": {
           "type": "array",
-          "description": "Invariants",
-          "items": { "$ref": "#/$defs/constraint" },
-          "minItems": 0
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "expression": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "description",
+              "expression"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "object",
+              "properties": {
+                "max": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "unit": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "percent"
+                    },
+                    {
+                      "type": "string",
+                      "const": "cores"
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "memory": {
+              "type": "object",
+              "properties": {
+                "max": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "unit": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "bytes"
+                    },
+                    {
+                      "type": "string",
+                      "const": "kb"
+                    },
+                    {
+                      "type": "string",
+                      "const": "mb"
+                    },
+                    {
+                      "type": "string",
+                      "const": "gb"
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "io": {
+              "type": "object",
+              "properties": {
+                "maxBytesPerSecond": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "maxOpsPerSecond": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "time": {
+              "type": "object",
+              "properties": {
+                "deadline": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "timeout": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "period": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "unit": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "ms"
+                    },
+                    {
+                      "type": "string",
+                      "const": "s"
+                    },
+                    {
+                      "type": "string",
+                      "const": "us"
+                    },
+                    {
+                      "type": "string",
+                      "const": "ns"
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         }
-      }
+      },
+      "required": [
+        "type",
+        "target",
+        "preconditions",
+        "postconditions"
+      ],
+      "additionalProperties": false
     },
     "constraint": {
       "type": "object",
-      "required": ["description", "expression"],
       "properties": {
         "description": {
           "type": "string",
-          "description": "Human-readable description",
           "minLength": 1,
           "maxLength": 4096
         },
         "expression": {
           "type": "string",
-          "description": "Constraint expression (tool-specific)",
           "minLength": 1,
           "maxLength": 4096
         }
-      }
+      },
+      "required": [
+        "description",
+        "expression"
+      ],
+      "additionalProperties": false
     },
     "events": {
       "type": "object",
-      "required": ["type", "events", "handlers"],
       "properties": {
         "type": {
+          "type": "string",
           "const": "events"
         },
         "events": {
           "type": "object",
-          "description": "Event declarations",
+          "propertyNames": {
+            "type": "string"
+          },
           "additionalProperties": {
             "type": "object",
             "properties": {
-              "payload": { "$ref": "#/$defs/typeDefinition" },
-              "attributes": { "type": "object" }
-            }
+              "payload": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": "boolean"
+                      },
+                      {
+                        "type": "string",
+                        "const": "integer"
+                      },
+                      {
+                        "type": "string",
+                        "const": "string"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "object"
+                      },
+                      "properties": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "typeParameters": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            },
+                            "constraint": {
+                              "anyOf": [
+                                {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "boolean"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "const": "integer"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "const": "string"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "any"
+                                }
+                              ]
+                            },
+                            "default": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "properties"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "$ref": "#/$defs/__schema0"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "enum"
+                      },
+                      "values": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "values"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "generic"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "typeArguments": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "attributes": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "correlationKey": {
+                "type": "string",
+                "maxLength": 256
+              }
+            },
+            "additionalProperties": false
           }
         },
         "handlers": {
+          "minItems": 0,
           "type": "array",
-          "description": "Event handlers",
-          "items": { "$ref": "#/$defs/handler" },
-          "minItems": 0
+          "items": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string"
+              },
+              "expects": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": "boolean"
+                      },
+                      {
+                        "type": "string",
+                        "const": "integer"
+                      },
+                      {
+                        "type": "string",
+                        "const": "string"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "object"
+                      },
+                      "properties": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "typeParameters": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            },
+                            "constraint": {
+                              "anyOf": [
+                                {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "boolean"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "const": "integer"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "const": "string"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "any"
+                                }
+                              ]
+                            },
+                            "default": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "properties"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "$ref": "#/$defs/__schema0"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "enum"
+                      },
+                      "values": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "values"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "generic"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "typeArguments": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "filter": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "action": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "propagates": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "event"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "type",
+        "events",
+        "handlers"
+      ],
+      "additionalProperties": false,
+      "$defs": {
+        "__schema0": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "array"
+            },
+            "items": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "boolean"
+                    },
+                    {
+                      "type": "string",
+                      "const": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "string"
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "object"
+                    },
+                    "properties": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "typeParameters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          },
+                          "constraint": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "boolean"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "integer"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "string"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "const": "any"
+                              }
+                            ]
+                          },
+                          "default": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "properties"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "enum"
+                    },
+                    "values": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "values"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ],
+          "additionalProperties": false
         }
       }
     },
-    "typeDefinition": {
-      "oneOf": [
-        { "const": "boolean" },
-        { "const": "integer" },
-        { "const": "string" },
-        { "$ref": "#/$defs/objectType" }
-      ]
+    "eventDeclaration": {
+      "type": "object",
+      "properties": {
+        "payload": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "boolean"
+                },
+                {
+                  "type": "string",
+                  "const": "integer"
+                },
+                {
+                  "type": "string",
+                  "const": "string"
+                }
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "object"
+                },
+                "properties": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "const": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "string"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                "typeParameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "constraint": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "const": "any"
+                          }
+                        ]
+                      },
+                      "default": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "const": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "properties"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "$ref": "#/$defs/__schema0"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "enum"
+                },
+                "values": {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "values"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "generic"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "typeArguments": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "const": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "string"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "attributes": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "correlationKey": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "additionalProperties": false,
+      "$defs": {
+        "__schema0": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "array"
+            },
+            "items": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "boolean"
+                    },
+                    {
+                      "type": "string",
+                      "const": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "string"
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "object"
+                    },
+                    "properties": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "typeParameters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          },
+                          "constraint": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "boolean"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "integer"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "string"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "const": "any"
+                              }
+                            ]
+                          },
+                          "default": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "properties"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "enum"
+                    },
+                    "values": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "values"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ],
+          "additionalProperties": false
+        }
+      }
     },
     "handler": {
       "type": "object",
-      "required": ["event"],
       "properties": {
         "event": {
-          "type": "string",
-          "description": "Event identifier",
-          "minLength": 1
+          "type": "string"
+        },
+        "expects": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "boolean"
+                },
+                {
+                  "type": "string",
+                  "const": "integer"
+                },
+                {
+                  "type": "string",
+                  "const": "string"
+                }
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "object"
+                },
+                "properties": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "const": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "string"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                "typeParameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "constraint": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "const": "any"
+                          }
+                        ]
+                      },
+                      "default": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "const": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "properties"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "$ref": "#/$defs/__schema0"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "enum"
+                },
+                "values": {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "values"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "generic"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "typeArguments": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "const": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "string"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          ]
         },
         "filter": {
           "type": "string",
-          "description": "Filter expression (tool-specific)",
           "maxLength": 4096
         },
         "action": {
           "type": "string",
-          "description": "Action expression (tool-specific)",
           "maxLength": 4096
         },
         "propagates": {
-          "type": "boolean",
-          "description": "Whether event propagates"
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "event"
+      ],
+      "additionalProperties": false,
+      "$defs": {
+        "__schema0": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "array"
+            },
+            "items": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "boolean"
+                    },
+                    {
+                      "type": "string",
+                      "const": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "string"
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "object"
+                    },
+                    "properties": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "typeParameters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          },
+                          "constraint": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "boolean"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "integer"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "string"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "const": "any"
+                              }
+                            ]
+                          },
+                          "default": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "properties"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "enum"
+                    },
+                    "values": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "values"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ],
+          "additionalProperties": false
         }
       }
     },
     "interaction": {
       "type": "object",
-      "required": ["type", "participants", "messages"],
       "properties": {
         "type": {
+          "type": "string",
           "const": "interaction"
         },
         "participants": {
+          "minItems": 1,
           "type": "array",
-          "description": "System participants",
-          "items": { "$ref": "#/$defs/participant" },
-          "minItems": 1
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string",
+                "maxLength": 256
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          }
         },
         "messages": {
+          "minItems": 0,
           "type": "array",
-          "description": "Message sequences",
-          "items": { "$ref": "#/$defs/messageSequence" },
-          "minItems": 0
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "payload": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": "boolean"
+                      },
+                      {
+                        "type": "string",
+                        "const": "integer"
+                      },
+                      {
+                        "type": "string",
+                        "const": "string"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "object"
+                      },
+                      "properties": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "typeParameters": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            },
+                            "constraint": {
+                              "anyOf": [
+                                {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "boolean"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "const": "integer"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "const": "string"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "any"
+                                }
+                              ]
+                            },
+                            "default": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "properties"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "$ref": "#/$defs/__schema0"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "enum"
+                      },
+                      "values": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "values"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "generic"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "typeArguments": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "integer"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "string"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "guard": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "security": {
+          "type": "object",
+          "properties": {
+            "authentication": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "none"
+                },
+                {
+                  "type": "string",
+                  "const": "token"
+                },
+                {
+                  "type": "string",
+                  "const": "mutual-tls"
+                },
+                {
+                  "type": "string",
+                  "const": "oauth2"
+                }
+              ]
+            },
+            "authorization": {
+              "type": "object",
+              "properties": {
+                "policy": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "roles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 256
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "confidentiality": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "none"
+                },
+                {
+                  "type": "string",
+                  "const": "encrypted"
+                },
+                {
+                  "type": "string",
+                  "const": "signed"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "participants",
+        "messages"
+      ],
+      "additionalProperties": false,
+      "$defs": {
+        "__schema0": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "array"
+            },
+            "items": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "boolean"
+                    },
+                    {
+                      "type": "string",
+                      "const": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "string"
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "object"
+                    },
+                    "properties": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "typeParameters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          },
+                          "constraint": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "boolean"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "integer"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "string"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "const": "any"
+                              }
+                            ]
+                          },
+                          "default": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "properties"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "enum"
+                    },
+                    "values": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "values"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ],
+          "additionalProperties": false
         }
       }
     },
     "participant": {
       "type": "object",
-      "required": ["name"],
       "properties": {
         "name": {
-          "type": "string",
-          "description": "Participant identifier",
-          "minLength": 1
+          "type": "string"
         },
         "role": {
           "type": "string",
-          "description": "Participant role",
           "maxLength": 256
         }
-      }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
     },
     "messageSequence": {
       "type": "object",
-      "required": ["from", "to", "message"],
       "properties": {
         "from": {
-          "type": "string",
-          "description": "Source participant",
-          "minLength": 1
+          "type": "string"
         },
         "to": {
-          "type": "string",
-          "description": "Destination participant",
-          "minLength": 1
+          "type": "string"
         },
         "message": {
-          "type": "string",
-          "description": "Message type/name",
-          "minLength": 1
+          "type": "string"
         },
-        "payload": { "$ref": "#/$defs/typeDefinition" },
+        "payload": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "boolean"
+                },
+                {
+                  "type": "string",
+                  "const": "integer"
+                },
+                {
+                  "type": "string",
+                  "const": "string"
+                }
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "object"
+                },
+                "properties": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "const": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "string"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                "typeParameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "constraint": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "const": "any"
+                          }
+                        ]
+                      },
+                      "default": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "const": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "properties"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "$ref": "#/$defs/__schema0"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "enum"
+                },
+                "values": {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "values"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "generic"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "typeArguments": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "const": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "string"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
         "guard": {
           "type": "string",
-          "description": "Guard condition (tool-specific)",
           "maxLength": 4096
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "message"
+      ],
+      "additionalProperties": false,
+      "$defs": {
+        "__schema0": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "array"
+            },
+            "items": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "boolean"
+                    },
+                    {
+                      "type": "string",
+                      "const": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "string"
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "object"
+                    },
+                    "properties": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "typeParameters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          },
+                          "constraint": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "boolean"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "integer"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "string"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "const": "any"
+                              }
+                            ]
+                          },
+                          "default": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "const": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "properties"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "enum"
+                    },
+                    "values": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "values"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ],
+          "additionalProperties": false
         }
       }
     },
     "hybrid": {
       "type": "object",
-      "required": ["type", "components"],
       "properties": {
         "type": {
+          "type": "string",
           "const": "hybrid"
         },
         "components": {
+          "minItems": 2,
           "type": "array",
-          "description": "Array of semantic specifications",
-          "items": { "$ref": "#/$defs/semantics" },
-          "minItems": 2
+          "items": {}
         }
-      }
-    },
-    "tools": {
-      "type": "object",
-      "description": "Tool-specific mappings (optional)",
-      "additionalProperties": true,
-      "propertyNames": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
-    "tests": {
-      "type": "array",
-      "description": "Test cases (optional)",
-      "items": { "$ref": "#/$defs/testCase" }
+      },
+      "required": [
+        "type",
+        "components"
+      ],
+      "additionalProperties": false
     },
     "testCase": {
       "type": "object",
-      "required": ["name", "description", "input", "expected"],
       "properties": {
         "name": {
-          "type": "string",
-          "description": "Test case name",
-          "minLength": 1
+          "type": "string"
         },
         "description": {
-          "type": "string",
-          "description": "Test description",
-          "minLength": 1
+          "type": "string"
         },
         "input": {
           "type": "object",
-          "description": "Input stimulus"
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
         },
         "expected": {
           "type": "object",
-          "description": "Expected outcome"
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
         }
-      }
+      },
+      "required": [
+        "name",
+        "description",
+        "input",
+        "expected"
+      ],
+      "additionalProperties": false
     },
     "documentation": {
       "type": "object",
-      "description": "Documentation section (optional)",
       "properties": {
         "overview": {
           "type": "string",
-          "description": "Long-form description",
           "maxLength": 65536
         },
         "examples": {
           "type": "array",
-          "description": "Usage examples",
           "items": {
-            "type": "object"
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           }
         }
-      }
+      },
+      "additionalProperties": false
+    },
+    "syncPrimitive": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "mutex"
+            },
+            {
+              "type": "string",
+              "const": "barrier"
+            },
+            {
+              "type": "string",
+              "const": "channel"
+            },
+            {
+              "type": "string",
+              "const": "semaphore"
+            }
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "capacity": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "typeParameter": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "constraint": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "boolean"
+                },
+                {
+                  "type": "string",
+                  "const": "integer"
+                },
+                {
+                  "type": "string",
+                  "const": "string"
+                }
+              ]
+            },
+            {
+              "type": "string",
+              "const": "any"
+            }
+          ]
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "boolean"
+            },
+            {
+              "type": "string",
+              "const": "integer"
+            },
+            {
+              "type": "string",
+              "const": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "resourceConstraint": {
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "object",
+          "properties": {
+            "max": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "unit": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "percent"
+                },
+                {
+                  "type": "string",
+                  "const": "cores"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "memory": {
+          "type": "object",
+          "properties": {
+            "max": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "unit": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "bytes"
+                },
+                {
+                  "type": "string",
+                  "const": "kb"
+                },
+                {
+                  "type": "string",
+                  "const": "mb"
+                },
+                {
+                  "type": "string",
+                  "const": "gb"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "io": {
+          "type": "object",
+          "properties": {
+            "maxBytesPerSecond": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "maxOpsPerSecond": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "time": {
+          "type": "object",
+          "properties": {
+            "deadline": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "timeout": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "period": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "unit": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "ms"
+                },
+                {
+                  "type": "string",
+                  "const": "s"
+                },
+                {
+                  "type": "string",
+                  "const": "us"
+                },
+                {
+                  "type": "string",
+                  "const": "ns"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "securityProperties": {
+      "type": "object",
+      "properties": {
+        "authentication": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "none"
+            },
+            {
+              "type": "string",
+              "const": "token"
+            },
+            {
+              "type": "string",
+              "const": "mutual-tls"
+            },
+            {
+              "type": "string",
+              "const": "oauth2"
+            }
+          ]
+        },
+        "authorization": {
+          "type": "object",
+          "properties": {
+            "policy": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "roles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 256
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "confidentiality": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "none"
+            },
+            {
+              "type": "string",
+              "const": "encrypted"
+            },
+            {
+              "type": "string",
+              "const": "signed"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

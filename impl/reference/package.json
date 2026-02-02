@@ -17,6 +17,7 @@
     "bsif": "tsx src/cli.ts",
     "build": "tsc",
     "ci": "npm run lint && npm run test:types && npm run test",
+    "generate-schema": "tsx scripts/generate-json-schema.ts",
     "lint": "eslint --cache . && tsc --noEmit",
     "lint:fix": "eslint . --fix",
     "test": "tsx --test test/**/*.unit.test.ts test/**/*.integration.test.ts",
