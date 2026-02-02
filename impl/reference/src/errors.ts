@@ -55,6 +55,13 @@ export const enum ErrorCode {
 	ParallelStateNoChildren = "E127",
 	InvalidTimingConstraint = "E128",
 	DuplicateReference = "E129",
+	CTLSemanticsUndefined = "E130",
+	CTLOperatorAmbiguous = "E131",
+	ParallelRegionTransition = "E132",
+	NestedParallelState = "E133",
+	EmptyToolMapping = "E134",
+	DuplicateEnumValue = "E135",
+	UndefinedTypeReference = "E136",
 
 	// General validation errors (E200-E299)
 	ValidationFailed = "E200",
