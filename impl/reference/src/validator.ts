@@ -320,6 +320,30 @@ function validateTemporal(temporal: Temporal): readonly ValidationError[] {
 	const declaredVariables = new Set(Object.keys(temporal.variables));
 	const propertyNames = new Set<string>();
 
+	// CTL logic type warning: spec does not define CTL satisfaction semantics
+	if (temporal.logic === "ctl") {
+		errors.push(
+			createError(
+				ErrorCode.CTLSemanticsUndefined,
+				'Temporal logic type "ctl" is accepted but CTL satisfaction semantics are not yet defined in the BSIF specification. Formulas will be validated structurally only.',
+				{ severity: "warning", path: ["semantics", "logic"] },
+			),
+		);
+
+		// Warn about ambiguous "next" operator under CTL
+		for (const property of temporal.properties) {
+			if (formulaUsesOperator(property.formula, "next")) {
+				errors.push(
+					createError(
+						ErrorCode.CTLOperatorAmbiguous,
+						`Property "${property.name}" uses "next" operator which has ambiguous semantics under CTL (could be AX or EX). Consider using LTL logic type.`,
+						{ severity: "warning", path: ["properties", property.name] },
+					),
+				);
+			}
+		}
+	}
+
 	// Check each property
 	for (const property of temporal.properties) {
 		// Check for duplicate property names
@@ -419,6 +443,19 @@ function checkOperandType(
 	}
 
 	return [];
+}
+
+// Check if a formula tree contains a specific operator
+function formulaUsesOperator(formula: unknown, op: string): boolean {
+	if (typeof formula !== "object" || formula === null) return false;
+	if (!("operator" in formula)) return false;
+	const f = formula;
+	if (f.operator === op) return true;
+	if ("operand" in f) return formulaUsesOperator(f.operand, op);
+	if ("operands" in f && Array.isArray(f.operands)) {
+		return (f.operands).some((o: unknown) => formulaUsesOperator(o, op));
+	}
+	return false;
 }
 
 // Collect all variable references from an LTL formula
