@@ -22,6 +22,12 @@ export interface ParseOptions {
 	readonly encoding?: BufferEncoding;
 	readonly allowUnknownSemantics?: boolean;
 	readonly limits?: ParseLimits;
+	readonly compatibilityMode?: boolean;
+}
+
+export interface IncrementalParseOptions extends ParseOptions {
+	readonly signal?: AbortSignal;
+	readonly onProgress?: (bytesRead: number, totalBytes: number) => void;
 }
 
 const defaultOptions: ParseOptions = {
@@ -302,4 +308,70 @@ function isValidationError(error: unknown): error is ValidationError {
 		"severity" in error &&
 		"message" in error
 	);
+}
+
+//==============================================================================
+// Error Suggestions
+//==============================================================================
+
+const COMMON_TYPOS: ReadonlyMap<string, string> = new Map([
+	["metdata", "metadata"],
+	["semnatics", "semantics"],
+	["bsif_verion", "bsif_version"],
+]);
+
+export function suggestCorrection(error: Error | ValidationError | unknown, content: string): string | undefined {
+	// Suppress unused parameter warning - error provides context for future extensions
+	void error;
+
+	// Check for trailing commas
+	if (/,\s*[}\]]/.test(content)) {
+		return "Remove trailing comma before closing bracket";
+	}
+
+	// Check for unquoted keys
+	if (/{\s*\w+\s*:/.test(content)) {
+		return "Wrap key in double quotes";
+	}
+
+	// Check for missing commas between properties
+	if (/"\s*\n\s*"/.test(content)) {
+		return "Add comma between properties";
+	}
+
+	// Check for common typos
+	for (const [typo, correction] of COMMON_TYPOS) {
+		if (content.includes(typo)) {
+			return `Did you mean "${correction}"?`;
+		}
+	}
+
+	return undefined;
+}
+
+//==============================================================================
+// Incremental Parsing
+//==============================================================================
+
+export async function parseFileIncremental(
+	path: string,
+	options?: IncrementalParseOptions,
+): Promise<BSIFDocument> {
+	const { encoding = "utf-8", signal, onProgress } = options ?? {};
+
+	if (signal?.aborted) {
+		throw new Error("Parse aborted");
+	}
+
+	const content = await readFile(path, { encoding });
+
+	if (signal?.aborted) {
+		throw new Error("Parse aborted");
+	}
+
+	if (onProgress) {
+		onProgress(content.length, content.length);
+	}
+
+	return parseContent(content, path, options?.limits);
 }
