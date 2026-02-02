@@ -13,6 +13,7 @@ export type {
 	StateMachine,
 	State,
 	Transition,
+	SyncPrimitive,
 	// Temporal
 	Temporal,
 	VariableDeclarations,
@@ -26,10 +27,13 @@ export type {
 	VariableRef,
 	UnaryOperator,
 	BinaryOperator,
+	TypeParameter,
+	GenericRef,
 	// Constraints
 	Constraints,
 	TargetReference,
 	Constraint,
+	ResourceConstraint,
 	// Events
 	Events,
 	TypeDefinition,
@@ -40,6 +44,7 @@ export type {
 	Interaction,
 	Participant,
 	MessageSequence,
+	SecurityProperties,
 	// Hybrid
 	Hybrid,
 	// Semantics Union
@@ -85,6 +90,11 @@ export {
 	ltlFormula,
 	primitiveType,
 	typeDefinition,
+	syncPrimitive,
+	typeParameter,
+	genericRef,
+	resourceConstraint,
+	securityProperties,
 } from "./schemas.js";
 
 export {
@@ -111,8 +121,8 @@ export {
 // Parser
 //==============================================================================
 
-export { parseFile, parseFileSync, parseFileString, parseContent, parseContentWithSourceMap, buildSourceMap, resolveLocation, findPathOffset } from "./parser.js";
-export type { ParseOptions, ParseLimits, SourceMap } from "./parser.js";
+export { parseFile, parseFileSync, parseFileString, parseContent, parseContentWithSourceMap, parseFileIncremental, suggestCorrection, buildSourceMap, resolveLocation, findPathOffset } from "./parser.js";
+export type { ParseOptions, ParseLimits, IncrementalParseOptions, SourceMap } from "./parser.js";
 
 //==============================================================================
 // Validator
@@ -153,9 +163,11 @@ export { main as cliMain } from "./cli.js";
 //==============================================================================
 
 export { createStateMachine } from "./executors/state-machine-executor.js";
-export type { StateMachineInstance } from "./executors/state-machine-executor.js";
+export type { StateMachineInstance, TimingViolation } from "./executors/state-machine-executor.js";
 export { checkTrace } from "./executors/ltl-checker.js";
 export type { TraceStep, CheckResult } from "./executors/ltl-checker.js";
+export { checkCTL, buildKripkeStructure } from "./executors/ctl-checker.js";
+export type { CTLCheckResult, KripkeState, KripkeStructure } from "./executors/ctl-checker.js";
 export { generateMonitor } from "./generators/monitor-generator.js";
 export type { GeneratedMonitor } from "./generators/monitor-generator.js";
 
@@ -178,3 +190,10 @@ export { RegistryServer } from "./registry/server.js";
 export type { RegistryServerOptions } from "./registry/server.js";
 export { FileStorage } from "./registry/storage.js";
 export type { RegistryEntry, RegistrySearchResult } from "./registry/types.js";
+
+//==============================================================================
+// Migrations
+//==============================================================================
+
+export { registerMigration, getMigrations, migrate } from "./migrations/registry.js";
+export type { MigrationStep } from "./migrations/registry.js";
