@@ -12,6 +12,8 @@ import { lintCommand } from "./commands/lint.js";
 import { watchCommand } from "./commands/watch.js";
 import { generateCommand } from "./commands/generate.js";
 import { registryPublishCommand, registryFetchCommand, registrySearchCommand } from "./commands/registry.js";
+import { migrateCommand } from "./commands/migrate.js";
+import { importCommand } from "./commands/import.js";
 
 //==============================================================================
 // CLI Types
@@ -92,6 +94,10 @@ async function main(args: string[]): Promise<number> {
 			return await watchCommand(filePath, values);
 		case "generate":
 			return await generateCommand(filePath, values);
+		case "migrate":
+			return await migrateCommand(filePath, values);
+		case "import":
+			return await importCommand(filePath, values);
 		default:
 			console.error(`Unknown command: ${command}`);
 			printHelp();
@@ -122,6 +128,9 @@ function parseCliArgs(args: string[]): ParsedArgs {
 			registry: { type: "string" },
 			target: { type: "string" },
 			framework: { type: "string" },
+			"dry-run": { type: "boolean" },
+			"target-version": { type: "string" },
+			name: { type: "string" },
 		},
 		allowPositionals: true,
 	});
@@ -171,6 +180,8 @@ Commands:
   lint <file>            Run opinionated style checks
   watch <path>           Watch for changes and re-validate
   generate <file>        Generate tests from a BSIF specification
+  migrate <file>         Migrate BSIF document to a newer version
+  import <file>          Import from TLA+, SCXML, or SMT-LIB format
   registry publish <f>   Publish a spec to the registry
   registry fetch <name>  Fetch a spec from the registry
   registry search <q>    Search the registry
@@ -193,6 +204,16 @@ Generate Options:
   --target=<typescript|python>  Target language (default: typescript)
   --framework=<name>            Test framework to use
   --output=<dir>                Output directory for generated files
+
+Migrate Options:
+  --target-version=<semver>   Target version to migrate to (default: 1.0.0)
+  --dry-run                   Show migration plan without applying
+  --output=<path>             Output file path
+
+Import Options:
+  --name=<name>               Name for the imported spec
+  --version=<semver>          Version for the imported spec
+  --output=<path>             Output file path
 
 Registry Options:
   --registry=<url>            Registry URL (default: http://127.0.0.1:8642)
