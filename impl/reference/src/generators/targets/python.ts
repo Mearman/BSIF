@@ -3,6 +3,7 @@
 import type { BSIFDocument, StateMachine, Temporal, Constraints, Events, Interaction } from "../../schemas.js";
 import { isStateMachine, isTemporal, isConstraints, isEvents, isInteraction } from "../../schemas.js";
 import type { TestGenerator, GeneratedTestSuite } from "../test-generator.js";
+import { constraintToPython } from "../expression-evaluator.js";
 
 export class PythonGenerator implements TestGenerator {
 	readonly targetLanguage = "python";
@@ -136,11 +137,11 @@ export class PythonGenerator implements TestGenerator {
 
 		for (const pre of constraints.preconditions) {
 			const testName = `test_precondition_${pre.description.replace(/\W+/g, "_").toLowerCase()}`;
+			const assertion = constraintToPython(pre.expression, "pre");
 			lines.push(
 				`def ${testName}():`,
-				`    expression = ${JSON.stringify(pre.expression)}`,
-				`    assert len(expression) > 0`,
-				`    # TODO: implement actual precondition evaluation`,
+				`    # Expression: ${pre.expression}`,
+				`    ${assertion}`,
 				``,
 				``,
 			);
@@ -148,11 +149,11 @@ export class PythonGenerator implements TestGenerator {
 
 		for (const post of constraints.postconditions) {
 			const testName = `test_postcondition_${post.description.replace(/\W+/g, "_").toLowerCase()}`;
+			const assertion = constraintToPython(post.expression, "post");
 			lines.push(
 				`def ${testName}():`,
-				`    expression = ${JSON.stringify(post.expression)}`,
-				`    assert len(expression) > 0`,
-				`    # TODO: implement actual postcondition evaluation`,
+				`    # Expression: ${post.expression}`,
+				`    ${assertion}`,
 				``,
 				``,
 			);

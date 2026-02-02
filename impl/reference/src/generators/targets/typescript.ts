@@ -3,6 +3,7 @@
 import type { BSIFDocument, StateMachine, Temporal, Constraints, Events, Interaction } from "../../schemas.js";
 import { isStateMachine, isTemporal, isConstraints, isEvents, isInteraction } from "../../schemas.js";
 import type { TestGenerator, GeneratedTestSuite } from "../test-generator.js";
+import { constraintToTypeScript } from "../expression-evaluator.js";
 
 export class TypeScriptGenerator implements TestGenerator {
 	readonly targetLanguage = "typescript";
@@ -191,24 +192,22 @@ export class TypeScriptGenerator implements TestGenerator {
 		];
 
 		for (const pre of constraints.preconditions) {
+			const assertion = constraintToTypeScript(pre.expression, "pre");
 			lines.push(
 				`  it("precondition: ${pre.description}", () => {`,
-				`    const expression = ${JSON.stringify(pre.expression)};`,
-				`    expect(expression).toBeDefined();`,
-				`    expect(expression.length).toBeGreaterThan(0);`,
-				`    // TODO: implement actual precondition check against target function`,
+				`    // Expression: ${pre.expression}`,
+				`    ${assertion}`,
 				`  });`,
 				``,
 			);
 		}
 
 		for (const post of constraints.postconditions) {
+			const assertion = constraintToTypeScript(post.expression, "post");
 			lines.push(
 				`  it("postcondition: ${post.description}", () => {`,
-				`    const expression = ${JSON.stringify(post.expression)};`,
-				`    expect(expression).toBeDefined();`,
-				`    expect(expression.length).toBeGreaterThan(0);`,
-				`    // TODO: implement actual postcondition check against target function`,
+				`    // Expression: ${post.expression}`,
+				`    ${assertion}`,
 				`  });`,
 				``,
 			);
@@ -216,11 +215,11 @@ export class TypeScriptGenerator implements TestGenerator {
 
 		if (constraints.invariants) {
 			for (const inv of constraints.invariants) {
+				const assertion = constraintToTypeScript(inv.expression, "invariant");
 				lines.push(
 					`  it("invariant: ${inv.description}", () => {`,
-					`    const expression = ${JSON.stringify(inv.expression)};`,
-					`    expect(expression).toBeDefined();`,
-					`    // TODO: implement actual invariant check`,
+					`    // Expression: ${inv.expression}`,
+					`    ${assertion}`,
 					`  });`,
 					``,
 				);
