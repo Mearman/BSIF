@@ -1126,6 +1126,68 @@ function validateGeneral(doc: BSIFDocument, resourceLimits?: ResourceLimits): re
 		errors.push(...validateTools(doc));
 	}
 
+	// Expression safety warnings
+	errors.push(...checkExpressionSafety(doc));
+
+	return errors;
+}
+
+const SUSPICIOUS_PATTERNS = [
+	/\beval\s*\(/,
+	/\brequire\s*\(/,
+	/\bimport\s*\(/,
+	/\b__proto__\b/,
+	/\bconstructor\s*\./,
+	/\bprocess\s*\./,
+	/\bglobal\s*\./,
+	/\bwindow\s*\./,
+];
+
+function checkExpressionSafety(doc: BSIFDocument): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	const expressions: { expr: string; path: readonly string[] }[] = [];
+
+	// Collect expressions from different semantic types
+	if (isConstraints(doc.semantics)) {
+		for (const pre of doc.semantics.preconditions) {
+			expressions.push({ expr: pre.expression, path: ["preconditions", pre.description] });
+		}
+		for (const post of doc.semantics.postconditions) {
+			expressions.push({ expr: post.expression, path: ["postconditions", post.description] });
+		}
+		if (doc.semantics.invariants) {
+			for (const inv of doc.semantics.invariants) {
+				expressions.push({ expr: inv.expression, path: ["invariants", inv.description] });
+			}
+		}
+	}
+
+	if (isStateMachine(doc.semantics)) {
+		for (const t of doc.semantics.transitions) {
+			if (t.guard) expressions.push({ expr: t.guard, path: ["transitions", t.from, "guard"] });
+			if (t.action) expressions.push({ expr: t.action, path: ["transitions", t.from, "action"] });
+		}
+		for (const s of doc.semantics.states) {
+			if (s.entry) expressions.push({ expr: s.entry, path: ["states", s.name, "entry"] });
+			if (s.exit) expressions.push({ expr: s.exit, path: ["states", s.name, "exit"] });
+		}
+	}
+
+	for (const { expr, path } of expressions) {
+		for (const pattern of SUSPICIOUS_PATTERNS) {
+			if (pattern.test(expr)) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidExpression,
+						`Expression contains suspicious pattern: "${expr.substring(0, 50)}..."`,
+						{ severity: "warning", path: [...path] },
+					),
+				);
+				break;
+			}
+		}
+	}
+
 	return errors;
 }
 
