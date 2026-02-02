@@ -57,6 +57,19 @@ export class TLAPlusMapper implements Mapper<string> {
 		lines.push(`VARIABLE state`);
 		lines.push(``);
 
+		// Sync primitives as comments
+		for (const s of sm.states) {
+			if (s.sync) {
+				for (const sp of s.sync) {
+					let syncLine = `\\* Sync: ${sp.type} "${sp.name}"`;
+					if (sp.capacity !== undefined) {
+						syncLine += ` (capacity: ${sp.capacity})`;
+					}
+					lines.push(syncLine);
+				}
+			}
+		}
+
 		// States as constants
 		const stateNames = sm.states.map((s) => toTLAName(s.name));
 		lines.push(`States == {${stateNames.map((s) => `"${s}"`).join(", ")}}`);
