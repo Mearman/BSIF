@@ -76,6 +76,7 @@ function parseCliArgs(args: string[]): ParsedArgs {
 			version: { type: "boolean", short: "v" },
 			format: { type: "string" },
 			output: { type: "string", short: "o" },
+			"output-format": { type: "string" },
 		},
 		allowPositionals: true,
 	});
@@ -122,8 +123,9 @@ Commands:
   convert <input>   Convert between JSON and YAML formats
 
 Convert Options:
-  --format=<json|yaml>  Output format
-  --output=<path>       Output file path
+  --format=<json|yaml>       Output format (convert/format)
+  --output=<path>            Output file path
+  --output-format=<json|text>  Output format for validate/check
 
 Options:
   -h, --help       Show this help message

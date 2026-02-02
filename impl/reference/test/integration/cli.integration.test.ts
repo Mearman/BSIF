@@ -229,6 +229,18 @@ semantics:
 		});
 	});
 
+	describe("output format", () => {
+		it("outputs JSON with --output-format=json", async () => {
+			const validDoc = join(process.cwd(), "test/fixtures/valid.bsif.json");
+			const result = await runCli(`validate --output-format=json ${validDoc}`);
+
+			assert.strictEqual(result.exitCode, 0);
+			const parsed = JSON.parse(result.stdout);
+			assert.strictEqual(parsed.valid, true);
+			assert.ok(Array.isArray(parsed.errors));
+		});
+	});
+
 	describe("error handling", () => {
 		it("returns non-zero exit code for non-existent file", async () => {
 			const result = await runCli("validate non-existent.bsif.json");

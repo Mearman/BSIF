@@ -8,7 +8,7 @@ import { formatErrors } from "../errors.js";
 
 export async function checkCommand(
 	filePath: string,
-	_options: Record<string, unknown>,
+	options: Record<string, unknown>,
 ): Promise<number> {
 	// Resolve file path
 	const resolvedPath = resolve(filePath);
@@ -16,6 +16,13 @@ export async function checkCommand(
 	// Parse with semantic validation enabled
 	const result = await parseFile(resolvedPath);
 	const validation = validate(result, { checkSemantics: true });
+
+	const outputFormat = options["output-format"];
+
+	if (outputFormat === "json") {
+		console.log(JSON.stringify(validation, null, 2));
+		return validation.valid ? 0 : 1;
+	}
 
 	if (validation.valid) {
 		console.log(`✓ ${filePath} semantic validation passed`);
