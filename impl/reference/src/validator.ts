@@ -768,6 +768,35 @@ function validateGeneral(doc: BSIFDocument, resourceLimits?: ResourceLimits): re
 	// Resource limits validation
 	errors.push(...validateResourceLimits(doc, resourceLimits));
 
+	// Composition reference validation
+	if (doc.metadata.references) {
+		errors.push(...validateCompositionReferences(doc));
+	}
+
+	return errors;
+}
+
+function validateCompositionReferences(doc: BSIFDocument): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	const refs = doc.metadata.references;
+
+	if (!refs) return errors;
+
+	// Check for duplicate references
+	const seen = new Set<string>();
+	for (const ref of refs) {
+		if (seen.has(ref)) {
+			errors.push(
+				createError(
+					ErrorCode.DuplicateReference,
+					`Duplicate reference: ${ref}`,
+					{ severity: "warning", path: ["metadata", "references"] },
+				),
+			);
+		}
+		seen.add(ref);
+	}
+
 	return errors;
 }
 

@@ -405,4 +405,28 @@ describe("Validator", () => {
 			assert.strictEqual(result.valid, true);
 		});
 	});
+
+	describe("composition references", () => {
+		it("accepts valid references", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "valid-with-references.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			assert.strictEqual(result.valid, true);
+		});
+
+		it("warns about duplicate references", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-duplicate-references.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const dupRefError = result.errors.find((e) => e.code === ErrorCode.DuplicateReference);
+			assert.ok(dupRefError, "Should have DuplicateReference warning");
+			assert.strictEqual(dupRefError.severity, "warning");
+		});
+	});
 });

@@ -1,0 +1,18 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-references",
+		"references": [
+			"https://example.com/spec-a.bsif.json",
+			"https://example.com/spec-b.bsif.json"
+		]
+	},
+	"semantics": {
+		"initial": "idle",
+		"states": [
+			{ "name": "idle" }
+		],
+		"transitions": [],
+		"type": "state-machine"
+	}
+}
