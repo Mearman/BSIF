@@ -62,12 +62,24 @@ export const enum ErrorCode {
 	EmptyToolMapping = "E134",
 	DuplicateEnumValue = "E135",
 	UndefinedTypeReference = "E136",
+	InvalidCorrelationKey = "E137",
+	InvalidSecurityProperty = "E138",
+	InvalidResourceConstraint = "E139",
 
 	// Composition errors (E140-E149)
 	UnresolvableReference = "E140",
 	CircularCompositionReference = "E141",
 	ReferenceVersionMismatch = "E142",
 	CompositionNamespaceConflict = "E143",
+
+	InvalidTypeParameter = "E150",
+	InvalidSyncPrimitive = "E151",
+	DeprecatedUsage = "E152",
+	OptimizationSuggestion = "E153",
+	InvalidPeriodicTask = "E154",
+	MigrationRequired = "E155",
+	CustomRuleFailed = "E156",
+	CTLCheckFailed = "E157",
 
 	// Lint rules (E400-E409)
 	LintMissingDescription = "E400",
@@ -77,6 +89,9 @@ export const enum ErrorCode {
 	LintEmptyToolMapping = "E404",
 	LintDeepNesting = "E405",
 	LintNoFinalStates = "E406",
+	LintRedundantGuard = "E407",
+	LintSimplifiableFormula = "E408",
+	LintUnreachableState = "E409",
 
 	// Executor errors (E600-E609)
 	InvalidEvent = "E600",
