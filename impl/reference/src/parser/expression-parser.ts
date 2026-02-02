@@ -1,7 +1,11 @@
 // BSIF Expression Parser
 // Converts JavaScript-like string expressions to structured AST format
 
-import type { ExpressionAST, ExpressionLiteral, ExpressionVariable, ExpressionBinary, ExpressionUnary } from "../schemas.js";
+import type {
+	ExpressionAST,
+	ExpressionUnary,
+	ExpressionBinary,
+} from "../schemas.js";
 
 //==============================================================================
 // Tokenizer
@@ -25,6 +29,11 @@ enum TokenType {
 
 	// Operators
 	ASSIGN,       // =
+	PLUSEQ,       // +=
+	MINUSEQ,      // -=
+	TIMESEQ,      // *=
+	DIVIDEEQ,     // /=
+	MODULOEQ,     // %=
 	EQ,           // ==
 	NEQ,          // !=
 	LT,           // <
@@ -45,14 +54,15 @@ enum TokenType {
 	// Delimiters
 	LPAREN,       // (
 	RPAREN,       // )
+	LBRACKET,     // [
+	RBRACKET,     // ]
 	DOT,          // .
 	COMMA,        // ,
+	SEMICOLON,    // ;
 
 	// End
 	EOF,
 }
-
-const KEYWORDS = new Set(["true", "false", "null"]);
 
 function tokenize(input: string): Token[] {
 	const tokens: Token[] = [];
@@ -60,10 +70,6 @@ function tokenize(input: string): Token[] {
 
 	function peek(offset = 0): string | undefined {
 		return input[position + offset];
-	}
-
-	function advance(): string | undefined {
-		return input[position++];
 	}
 
 	function skipWhitespace(): void {
@@ -123,6 +129,37 @@ function tokenize(input: string): Token[] {
 		}
 
 		// Operators and delimiters (multi-char first)
+		// Compound assignment operators (must check before =)
+		if (char === "+" && peek(1) === "=") {
+			tokens.push({ type: TokenType.PLUSEQ, value: "+=", position: startPos });
+			position += 2;
+			continue;
+		}
+
+		if (char === "-" && peek(1) === "=") {
+			tokens.push({ type: TokenType.MINUSEQ, value: "-=", position: startPos });
+			position += 2;
+			continue;
+		}
+
+		if (char === "*" && peek(1) === "=") {
+			tokens.push({ type: TokenType.TIMESEQ, value: "*=", position: startPos });
+			position += 2;
+			continue;
+		}
+
+		if (char === "/" && peek(1) === "=") {
+			tokens.push({ type: TokenType.DIVIDEEQ, value: "/=", position: startPos });
+			position += 2;
+			continue;
+		}
+
+		if (char === "%" && peek(1) === "=") {
+			tokens.push({ type: TokenType.MODULOEQ, value: "%=", position: startPos });
+			position += 2;
+			continue;
+		}
+
 		if (char === "=" && peek(1) === "=") {
 			if (peek(2) === "=") {
 				tokens.push({ type: TokenType.EQ_STRICT, value: "===", position: startPos });
@@ -204,11 +241,20 @@ function tokenize(input: string): Token[] {
 			case ")":
 				tokens.push({ type: TokenType.RPAREN, value: ")", position: startPos });
 				break;
+			case "[":
+				tokens.push({ type: TokenType.LBRACKET, value: "[", position: startPos });
+				break;
+			case "]":
+				tokens.push({ type: TokenType.RBRACKET, value: "]", position: startPos });
+				break;
 			case ".":
 				tokens.push({ type: TokenType.DOT, value: ".", position: startPos });
 				break;
 			case ",":
 				tokens.push({ type: TokenType.COMMA, value: ",", position: startPos });
+				break;
+			case ";":
+				tokens.push({ type: TokenType.SEMICOLON, value: ";", position: startPos });
 				break;
 			default:
 				throw new Error(`Unexpected character '${char}' at position ${startPos}`);
@@ -254,8 +300,13 @@ export class ExpressionParser {
 	}
 
 	// Precedence levels (higher = tighter binding)
-	private readonly PRECEDENCE: Record<TokenType, number> = {
+	private readonly PRECEDENCE: Partial<Record<TokenType, number>> = {
 		[TokenType.ASSIGN]: 1,
+		[TokenType.PLUSEQ]: 1,
+		[TokenType.MINUSEQ]: 1,
+		[TokenType.TIMESEQ]: 1,
+		[TokenType.DIVIDEEQ]: 1,
+		[TokenType.MODULOEQ]: 1,
 		[TokenType.OR]: 2,
 		[TokenType.AND]: 3,
 		[TokenType.EQ]: 4,
@@ -278,11 +329,30 @@ export class ExpressionParser {
 	}
 
 	parse(): ExpressionAST {
-		const expr = this.parseExpression();
+		// Check for statement sequence (semicolon-separated expressions)
+		const statements: ExpressionAST[] = [];
+		statements.push(this.parseExpression());
+
+		// Check for semicolons - if we have them, it's a sequence
+		while (this.peek().type === TokenType.SEMICOLON) {
+			this.consume(); // consume semicolon
+			// Allow trailing semicolon
+			if (this.peek().type === TokenType.EOF) {
+				break;
+			}
+			statements.push(this.parseExpression());
+		}
+
 		if (this.peek().type !== TokenType.EOF) {
 			throw new Error(`Unexpected token ${TokenType[this.peek().type]} at position ${this.peek().position}`);
 		}
-		return expr;
+
+		// If we have multiple statements, return a sequence
+		if (statements.length > 1) {
+			return { sequence: statements };
+		}
+
+		return statements[0]!;
 	}
 
 	private parseExpression(minPrecedence = 0): ExpressionAST {
@@ -295,7 +365,7 @@ export class ExpressionParser {
 		if (token.type === TokenType.NOT || token.type === TokenType.MINUS || token.type === TokenType.PLUS) {
 			this.consume();
 			const operand = this.parseExpression(8); // Unary has highest precedence
-			const opMap: Record<TokenType, ExpressionUnary["operator"]> = {
+			const opMap: Partial<Record<TokenType, ExpressionUnary["operator"]>> = {
 				[TokenType.NOT]: "!",
 				[TokenType.MINUS]: "-",
 				[TokenType.PLUS]: "+",
@@ -309,7 +379,13 @@ export class ExpressionParser {
 		}
 
 		// Parse binary operators
-		while (this.peek().type !== TokenType.EOF && this.peek().type !== TokenType.RPAREN && this.peek().type !== TokenType.COMMA) {
+		while (
+			this.peek().type !== TokenType.EOF &&
+			this.peek().type !== TokenType.RPAREN &&
+			this.peek().type !== TokenType.COMMA &&
+			this.peek().type !== TokenType.SEMICOLON &&
+			this.peek().type !== TokenType.RBRACKET
+		) {
 			const opToken = this.peek();
 			const precedence = this.getPrecedence(opToken);
 
@@ -317,8 +393,13 @@ export class ExpressionParser {
 
 			this.consume();
 
-			const opMap: Record<number, ExpressionBinary["operator"]> = {
+			const opMap: Partial<Record<TokenType, ExpressionBinary["operator"]>> = {
 				[TokenType.ASSIGN]: "=",
+				[TokenType.PLUSEQ]: "+=",
+				[TokenType.MINUSEQ]: "-=",
+				[TokenType.TIMESEQ]: "*=",
+				[TokenType.DIVIDEEQ]: "/=",
+				[TokenType.MODULOEQ]: "%=",
 				[TokenType.EQ]: "==",
 				[TokenType.NEQ]: "!=",
 				[TokenType.LT]: "<",
@@ -358,45 +439,109 @@ export class ExpressionParser {
 		switch (token.type) {
 			case TokenType.NUMBER: {
 				this.consume();
-				return { literal: parseFloat(token.value) };
+				return this.parsePostfix({ literal: parseFloat(token.value) });
 			}
 
 			case TokenType.STRING: {
 				this.consume();
-				return { literal: token.value };
+				return this.parsePostfix({ literal: token.value });
 			}
 
 			case TokenType.BOOLEAN: {
 				this.consume();
-				return { literal: token.value === "true" };
+				return this.parsePostfix({ literal: token.value === "true" });
 			}
 
 			case TokenType.NULL: {
 				this.consume();
-				return { literal: null };
+				return this.parsePostfix({ literal: null });
 			}
 
 			case TokenType.IDENTIFIER: {
-				// Check for member access: obj.prop
-				let varName = this.consume().value;
-				while (this.peek().type === TokenType.DOT) {
-					this.consume(); // consume dot
-					const prop = this.expect(TokenType.IDENTIFIER);
-					varName += "." + prop.value;
-				}
-				return { variable: varName };
+				const varName = this.consume().value;
+				return this.parsePostfix({ variable: varName });
 			}
 
 			case TokenType.LPAREN: {
 				this.consume(); // consume '('
 				const expr = this.parseExpression();
 				this.expect(TokenType.RPAREN); // consume ')'
-				return expr;
+				return this.parsePostfix(expr);
 			}
 
 			default:
 				throw new Error(`Unexpected token ${TokenType[token.type]} (${token.value}) at position ${token.position}`);
 		}
+	}
+
+	/**
+	 * Parse postfix operations: function calls, array access, and member access
+	 * e.g., func(), arr[index], obj.method().prop
+	 */
+	private parsePostfix(expr: ExpressionAST): ExpressionAST {
+		while (true) {
+			// Function call: expr(arg1, arg2, ...)
+			if (this.peek().type === TokenType.LPAREN) {
+				this.consume(); // consume '('
+				const args: ExpressionAST[] = [];
+
+				// Check for empty argument list
+				if (this.peek().type !== TokenType.RPAREN) {
+					args.push(this.parseExpression());
+					while (this.peek().type === TokenType.COMMA) {
+						this.consume(); // consume comma
+						args.push(this.parseExpression());
+					}
+				}
+
+				this.expect(TokenType.RPAREN); // consume ')'
+
+				// Check if this is a method call on a variable
+				if ("variable" in expr) {
+					expr = { call: expr.variable, arguments: args };
+				} else {
+					throw new Error(`Function calls require a callable expression at position ${this.peek().position}`);
+				}
+
+				continue;
+			}
+
+			// Array access: expr[index]
+			if (this.peek().type === TokenType.LBRACKET) {
+				this.consume(); // consume '['
+				const index = this.parseExpression();
+				this.expect(TokenType.RBRACKET); // consume ']'
+
+				expr = { access: { target: expr, index } };
+				continue;
+			}
+
+			// Member access: expr.prop
+			if (this.peek().type === TokenType.DOT) {
+				this.consume(); // consume dot
+				const prop = this.expect(TokenType.IDENTIFIER);
+
+				// For now, convert arr[0].prop to a variable string representation
+				// This is a limitation - ideally we'd have a proper member access AST node
+				if ("access" in expr || "call" in expr) {
+					// For complex expressions, convert to string variable
+					const exprStr = JSON.stringify(expr).replace(/"/g, "");
+					expr = { variable: `${exprStr}.${prop.value}` };
+				} else if ("variable" in expr) {
+					// Simple variable.prop stays as variable string
+					expr = { variable: `${expr.variable}.${prop.value}` };
+				} else {
+					throw new Error(`Member access requires a target expression at position ${this.peek().position}`);
+				}
+
+				continue;
+			}
+
+			// No more postfix operations
+			break;
+		}
+
+		return expr;
 	}
 }
 
