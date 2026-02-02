@@ -908,6 +908,20 @@ function validateCompositionReferences(doc: BSIFDocument): readonly ValidationEr
 		seen.add(ref);
 	}
 
+	// Check for self-references (reference URL contains the document's own name)
+	const docName = doc.metadata.name;
+	for (const ref of refs) {
+		if (ref.includes(docName)) {
+			errors.push(
+				createError(
+					ErrorCode.DuplicateReference,
+					`Self-reference detected: "${ref}" references document "${docName}"`,
+					{ severity: "warning", path: ["metadata", "references"] },
+				),
+			);
+		}
+	}
+
 	return errors;
 }
 

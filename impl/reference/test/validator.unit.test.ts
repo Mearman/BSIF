@@ -622,5 +622,29 @@ describe("Validator", () => {
 			assert.ok(dupRefError, "Should have DuplicateReference warning");
 			assert.strictEqual(dupRefError.severity, "warning");
 		});
+
+		it("warns about self-references", () => {
+			const doc = {
+				metadata: {
+					bsif_version: "1.0.0",
+					name: "my-spec",
+					references: ["https://example.com/specs/my-spec"],
+				},
+				semantics: {
+					type: "state-machine",
+					states: [{ name: "idle" }],
+					transitions: [],
+					initial: "idle",
+				},
+			};
+
+			const result = validate(doc);
+
+			const selfRefError = result.errors.find(
+				(e) => e.code === ErrorCode.DuplicateReference && e.message.includes("Self-reference"),
+			);
+			assert.ok(selfRefError, "Should have self-reference warning");
+			assert.strictEqual(selfRefError.severity, "warning");
+		});
 	});
 });
