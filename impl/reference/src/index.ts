@@ -18,6 +18,7 @@ export type {
 	ExpressionUnary,
 	ExpressionCall,
 	ExpressionAccess,
+	ExpressionMember,
 	ExpressionSequence,
 	// State Machine
 	StateMachine,
@@ -91,6 +92,7 @@ export {
 	expressionUnary,
 	expressionCall,
 	expressionAccess,
+	expressionMember,
 	expressionSequence,
 	isExpression,
 	isStringExpression,
