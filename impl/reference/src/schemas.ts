@@ -254,6 +254,7 @@ export const eventDeclarations = z.record(z.string(), eventDeclaration);
 
 export const handler = z.object({
 	event: z.string(),
+	expects: typeDefinition.optional(),
 	filter: z.string().max(4096).optional(),
 	action: z.string().max(4096).optional(),
 	propagates: z.boolean().optional(),
@@ -290,6 +291,7 @@ export const messageSequence = z.object({
 	message: z.string(),
 	payload: typeDefinition.optional(),
 	guard: z.string().max(4096).optional(),
+	sequence: z.number().int().nonnegative().optional(),
 });
 
 export type MessageSequence = z.infer<typeof messageSequence>;
