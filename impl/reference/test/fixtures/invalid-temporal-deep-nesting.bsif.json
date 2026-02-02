@@ -1,0 +1,20 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-deep-nesting"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": {
+					"operand": { "operand": { "operand": { "operand": { "operand": { "operand": { "operand": { "operand": { "operand": { "operand": { "operator": "variable", "variable": "p" }, "operator": "not" }, "operator": "not" }, "operator": "not" }, "operator": "not" }, "operator": "not" }, "operator": "not" }, "operator": "not" }, "operator": "not" }, "operator": "not" },
+					"operator": "not"
+				},
+				"name": "deep"
+			}
+		],
+		"type": "temporal",
+		"variables": { "p": "boolean" }
+	}
+}

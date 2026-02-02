@@ -1,0 +1,15 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-circular-parent"
+	},
+	"semantics": {
+		"initial": "a",
+		"states": [
+			{ "name": "a", "parent": "b" },
+			{ "name": "b", "parent": "a" }
+		],
+		"transitions": [],
+		"type": "state-machine"
+	}
+}

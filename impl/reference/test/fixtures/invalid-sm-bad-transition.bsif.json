@@ -1,0 +1,17 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-bad-transition"
+	},
+	"semantics": {
+		"initial": "idle",
+		"states": [
+			{ "name": "idle" },
+			{ "name": "active" }
+		],
+		"transitions": [
+			{ "from": "idle", "to": "nonexistent" }
+		],
+		"type": "state-machine"
+	}
+}

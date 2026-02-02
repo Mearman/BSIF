@@ -394,6 +394,53 @@ describe("Validator", () => {
 		});
 	});
 
+	describe("circular parent references", () => {
+		it("detects circular parent references", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-circular-parent.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const circularError = result.errors.find((e) => e.code === ErrorCode.CircularStateReference);
+			assert.ok(circularError, "Should have CircularStateReference error");
+		});
+	});
+
+	describe("invalid transitions", () => {
+		it("rejects transitions referencing non-existent states", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-bad-transition.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const transError = result.errors.find((e) => e.code === ErrorCode.InvalidTransition);
+			assert.ok(transError, "Should have InvalidTransition error");
+			assert.match(transError.message, /nonexistent/);
+		});
+	});
+
+	describe("nesting depth", () => {
+		it("warns when document nesting exceeds limit", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states: [{ name: "idle" }],
+					transitions: [],
+					initial: "idle",
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true, resourceLimits: { maxNestingDepth: 1 } });
+
+			const nestingError = result.errors.find((e) => e.code === ErrorCode.NestingDepthExceeded);
+			assert.ok(nestingError, "Should have NestingDepthExceeded warning");
+			assert.strictEqual(nestingError.severity, "warning");
+		});
+	});
+
 	describe("timing constraints", () => {
 		it("accepts valid timing constraints", async () => {
 			const fixturePath = join(import.meta.dirname, "fixtures", "valid-sm-timing.bsif.json");
@@ -403,6 +450,26 @@ describe("Validator", () => {
 			const result = validate(doc);
 
 			assert.strictEqual(result.valid, true);
+		});
+
+		it("warns when deadline is less than timeout", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "state-machine",
+					states: [{ name: "idle" }, { name: "active" }],
+					transitions: [
+						{ from: "idle", to: "active", timing: { deadline: 100, timeout: 500, unit: "ms" } },
+					],
+					initial: "idle",
+				},
+			};
+
+			const result = validate(doc);
+
+			const timingError = result.errors.find((e) => e.code === ErrorCode.InvalidTimingConstraint);
+			assert.ok(timingError, "Should have InvalidTimingConstraint warning");
+			assert.strictEqual(timingError.severity, "warning");
 		});
 	});
 
