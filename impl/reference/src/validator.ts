@@ -294,6 +294,9 @@ function validateTemporal(temporal: Temporal): readonly ValidationError[] {
 		}
 		propertyNames.add(property.name);
 
+		// Validate formula structure
+		errors.push(...validateFormulaStructure(property.formula, ["properties", property.name], 0));
+
 		// Collect variable references from formula
 		const referencedVars = collectVariableReferences(property.formula);
 
@@ -338,6 +341,83 @@ function collectVariableReferences(formula: unknown): Set<string> {
 	}
 
 	return variables;
+}
+
+// Validate formula structure (operand counts, nesting depth)
+const UNARY_OPERATORS = new Set(["not", "globally", "finally", "next", "always", "eventually"]);
+const BINARY_OPERATORS = new Set(["and", "or", "implies", "until"]);
+const MAX_FORMULA_DEPTH = 100;
+
+function validateFormulaStructure(formula: unknown, path: readonly string[], depth: number): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	if (typeof formula !== "object" || formula === null) {
+		return errors;
+	}
+
+	if (depth > MAX_FORMULA_DEPTH) {
+		errors.push(
+			createError(
+				ErrorCode.NestingDepthExceeded,
+				`Formula nesting depth exceeds maximum of ${MAX_FORMULA_DEPTH}`,
+				{ severity: "warning", path: [...path] },
+			),
+		);
+		return errors;
+	}
+
+	if (!("operator" in formula) || typeof formula.operator !== "string") {
+		return errors;
+	}
+
+	const op = formula.operator;
+
+	if (UNARY_OPERATORS.has(op)) {
+		if (!("operand" in formula)) {
+			errors.push(
+				createError(
+					ErrorCode.InvalidFormulaStructure,
+					`Unary operator "${op}" requires an "operand" field`,
+					{ path: [...path, op] },
+				),
+			);
+		} else {
+			errors.push(...validateFormulaStructure(formula.operand, [...path, op], depth + 1));
+		}
+	} else if (BINARY_OPERATORS.has(op)) {
+		if (!("operands" in formula) || !Array.isArray(formula.operands)) {
+			errors.push(
+				createError(
+					ErrorCode.InvalidFormulaStructure,
+					`Binary operator "${op}" requires an "operands" array`,
+					{ path: [...path, op] },
+				),
+			);
+		} else {
+			if (op === "until" && formula.operands.length !== 2) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidFormulaStructure,
+						`Operator "until" requires exactly 2 operands, got ${formula.operands.length}`,
+						{ path: [...path, op] },
+					),
+				);
+			} else if (formula.operands.length < 2) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidFormulaStructure,
+						`Binary operator "${op}" requires at least 2 operands, got ${formula.operands.length}`,
+						{ path: [...path, op] },
+					),
+				);
+			}
+			for (const operand of formula.operands) {
+				errors.push(...validateFormulaStructure(operand, [...path, op], depth + 1));
+			}
+		}
+	}
+
+	return errors;
 }
 
 //==============================================================================

@@ -1,0 +1,24 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-wrong-operands"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": {
+					"operands": [
+						{ "operator": "variable", "variable": "p" }
+					],
+					"operator": "until"
+				},
+				"name": "bad_until"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"p": "boolean"
+		}
+	}
+}

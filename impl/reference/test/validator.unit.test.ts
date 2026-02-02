@@ -287,4 +287,19 @@ describe("Validator", () => {
 			assert.match(deadlockError.message, /stuck/);
 		});
 	});
+
+	describe("temporal formula structure", () => {
+		it("rejects until with wrong operand count", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-temporal-wrong-operands.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			assert.strictEqual(result.valid, false);
+			const formulaError = result.errors.find((e) => e.code === ErrorCode.InvalidFormulaStructure);
+			assert.ok(formulaError, "Should have InvalidFormulaStructure error");
+			assert.match(formulaError.message, /until/);
+		});
+	});
 });
