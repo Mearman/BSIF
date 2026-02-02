@@ -1,8 +1,9 @@
 // BSIF Reference Implementation - Check Command
 // Validates BSIF document semantics
 
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { parseFile } from "../parser.js";
+import { parseContent, buildSourceMap } from "../parser.js";
 import { validate } from "../validator.js";
 import { formatErrors } from "../errors.js";
 
@@ -13,9 +14,13 @@ export async function checkCommand(
 	// Resolve file path
 	const resolvedPath = resolve(filePath);
 
+	// Read content and build source map
+	const content = await readFile(resolvedPath, "utf-8");
+	const sourceMap = buildSourceMap(content);
+
 	// Parse with semantic validation enabled
-	const result = await parseFile(resolvedPath);
-	const validation = validate(result, { checkSemantics: true });
+	const result = parseContent(content, resolvedPath);
+	const validation = validate(result, { checkSemantics: true, sourceMap });
 
 	const outputFormat = options["output-format"];
 

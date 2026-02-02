@@ -1,8 +1,9 @@
 // BSIF Reference Implementation - Validate Command
 // Validates BSIF document against schema
 
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { parseFile } from "../parser.js";
+import { parseContent, buildSourceMap } from "../parser.js";
 import { validate } from "../validator.js";
 import { formatErrors } from "../errors.js";
 
@@ -13,9 +14,13 @@ export async function validateCommand(
 	// Resolve file path
 	const resolvedPath = resolve(filePath);
 
+	// Read content and build source map
+	const content = await readFile(resolvedPath, "utf-8");
+	const sourceMap = buildSourceMap(content);
+
 	// Parse and validate
-	const result = await parseFile(resolvedPath);
-	const validation = validate(result);
+	const result = parseContent(content, resolvedPath);
+	const validation = validate(result, { sourceMap });
 
 	const outputFormat = options["output-format"];
 
