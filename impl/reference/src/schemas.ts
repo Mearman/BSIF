@@ -110,7 +110,29 @@ export const objectType = z.object({
 
 export type ObjectType = z.infer<typeof objectType>;
 
-export const variableDeclarations = z.record(z.string(), z.union([variableType, objectType]));
+export const enumType = z.object({
+	type: z.literal("enum"),
+	values: z.array(z.union([z.string(), z.number(), z.boolean()])).min(1),
+});
+
+export type EnumType = z.infer<typeof enumType>;
+
+export function isEnumType(value: unknown): value is EnumType {
+	return enumType.safeParse(value).success;
+}
+
+export interface ArrayType { type: "array"; items: VariableType | ObjectType | ArrayType | EnumType }
+
+export const arrayType: z.ZodType<ArrayType> = z.object({
+	type: z.literal("array"),
+	items: z.lazy(() => z.union([variableType, objectType, arrayType, enumType])),
+});
+
+export function isArrayType(value: unknown): value is ArrayType {
+	return arrayType.safeParse(value).success;
+}
+
+export const variableDeclarations = z.record(z.string(), z.union([variableType, objectType, arrayType, enumType]));
 
 export type VariableDeclarations = z.infer<typeof variableDeclarations>;
 
@@ -243,7 +265,7 @@ export const primitiveType = z.union([
 
 export type PrimitiveType = z.infer<typeof primitiveType>;
 
-export const typeDefinition = z.union([primitiveType, objectType]);
+export const typeDefinition = z.union([primitiveType, objectType, arrayType, enumType]);
 
 export type TypeDefinition = z.infer<typeof typeDefinition>;
 
@@ -382,7 +404,7 @@ export type Documentation = z.infer<typeof documentation>;
 export const bsifDocument = z.object({
 	metadata: bsifMetadata,
 	semantics: semantics,
-	tools: z.record(z.string(), z.unknown()).optional(),
+	tools: z.record(z.string().min(1).max(256).regex(/^[a-zA-Z][a-zA-Z0-9_-]*$/), z.unknown()).optional(),
 	tests: z.array(testCase).optional(),
 	documentation: documentation.optional(),
 });
