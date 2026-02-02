@@ -25,9 +25,13 @@ export const enum ErrorCode {
 	InitialStateMissing = "E101",
 	CircularStateReference = "E102",
 	InvalidTransition = "E103",
+	/** @deprecated Use UndefinedVariable (E109) instead */
 	VariableNotDefined = "E104",
+	/** @deprecated Use InvalidFormulaStructure (E122) instead */
 	InvalidLTLFormula = "E105",
+	/** @deprecated Use UndefinedEvent (E113) instead */
 	EventNotFound = "E106",
+	/** @deprecated Use UndefinedParticipant (E116) instead */
 	ParticipantNotFound = "E107",
 	DuplicateName = "E108",
 	UndefinedVariable = "E109",
@@ -52,9 +56,8 @@ export const enum ErrorCode {
 	InvalidTimingConstraint = "E128",
 	DuplicateReference = "E129",
 
-	// Validation errors (E200-E299)
+	// General validation errors (E200-E299)
 	ValidationFailed = "E200",
-	SemanticError = "E201",
 }
 
 //==============================================================================
