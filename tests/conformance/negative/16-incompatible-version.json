@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "bsif_version": "99.0.0",
+    "name": "incompatible-version-test"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "idle" }
+    ],
+    "transitions": [],
+    "initial": "idle"
+  }
+}

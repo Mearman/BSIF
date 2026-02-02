@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "invalid-security-test"
+  },
+  "semantics": {
+    "type": "interaction",
+    "participants": [
+      { "name": "client" }
+    ],
+    "messages": [],
+    "security": {
+      "authentication": "none",
+      "authorization": {
+        "roles": ["admin"]
+      }
+    }
+  }
+}

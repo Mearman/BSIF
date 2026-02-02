@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "invalid-sync-test"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      {
+        "name": "bad-state",
+        "sync": [
+          { "type": "channel", "name": "ch", "capacity": 0 }
+        ]
+      }
+    ],
+    "transitions": [],
+    "initial": "bad-state"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "invalid-resource-test"
+  },
+  "semantics": {
+    "type": "constraints",
+    "target": { "function": "foo" },
+    "preconditions": [],
+    "postconditions": [],
+    "resources": {
+      "cpu": { "max": -10 }
+    }
+  }
+}
