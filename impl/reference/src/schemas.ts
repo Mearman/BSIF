@@ -34,57 +34,93 @@ export function isBSIFMetadata(value: unknown): value is BSIFMetadata {
  * Provides validation and tooling support while maintaining string compatibility
  */
 
-// Literal values (numbers, strings, booleans)
-export const expressionLiteral = z.object({
-  literal: z.union([z.boolean(), z.number(), z.string()]),
-});
+// Use a helper function to break circular type inference
+// @ts-expect-error - Circular type dependencies with expressionBinary, expressionUnary, expressionAST
+function createExpressionSchemas() {
+	// Literal values (numbers, strings, booleans)
+	const expressionLiteral = z.object({
+		literal: z.union([z.boolean(), z.number(), z.string()]),
+	});
 
+	// Variable reference
+	const expressionVariable = z.object({
+		variable: z.string(),
+	});
+
+	// Binary operation: { operator: "and", operands: [left, right] }
+	const expressionBinary = z.object({
+		operator: z.union([
+			// Assignment operators
+			z.literal("="),
+			z.literal("+="), z.literal("-="), z.literal("*="), z.literal("/="), z.literal("%="),
+			// Comparison operators
+			z.literal("=="), z.literal("!="), z.literal("<"), z.literal("<="),
+			z.literal(">"), z.literal(">="), z.literal("==="), z.literal("!=="),
+			// Logical operators
+			z.literal("&&"), z.literal("||"),
+			// Arithmetic operators
+			z.literal("+"), z.literal("-"), z.literal("*"), z.literal("/"),
+			z.literal("%"),
+		]),
+		operands: z.array(z.lazy(() => expressionAST)).min(2),
+	});
+
+	// Unary operation: { operator: "not", operand: { ... } }
+	// @ts-expect-error - Circular type dependency with expressionAST
+	const expressionUnary = z.object({
+		operator: z.union([
+			z.literal("!"), z.literal("-"), z.literal("+"),
+		]),
+		operand: z.lazy(() => expressionAST),
+	});
+
+	// Function call: { call: "funcName", arguments: [arg1, arg2, ...] }
+	const expressionCall = z.object({
+		call: z.string(),
+		arguments: z.array(z.lazy(() => expressionAST)),
+	});
+
+	// Array/index access: { access: { target, index } }
+	const expressionAccess = z.object({
+		access: z.object({
+			target: z.lazy(() => expressionAST),
+			index: z.lazy(() => expressionAST),
+		}),
+	});
+
+	// Statement sequence: { sequence: [stmt1, stmt2, ...] }
+	const expressionSequence = z.object({
+		sequence: z.array(z.lazy(() => expressionAST)).min(1),
+	});
+
+	// AST expression (structured format) - defined last to break circular dependency
+	const expressionAST = z.union([
+		expressionLiteral,
+		expressionVariable,
+		expressionBinary,
+		expressionUnary,
+		expressionCall,
+		expressionAccess,
+		expressionSequence,
+	]);
+
+	return { expressionLiteral, expressionVariable, expressionBinary, expressionUnary, expressionCall, expressionAccess, expressionSequence, expressionAST };
+}
+
+// Extract schemas from helper
+const { expressionLiteral, expressionVariable, expressionBinary, expressionUnary, expressionCall, expressionAccess, expressionSequence, expressionAST } = createExpressionSchemas();
+
+// Export schemas
+export { expressionLiteral, expressionVariable, expressionBinary, expressionUnary, expressionCall, expressionAccess, expressionSequence, expressionAST };
+
+// Export types
 export type ExpressionLiteral = z.infer<typeof expressionLiteral>;
-
-// Variable reference
-export const expressionVariable = z.object({
-  variable: z.string(),
-});
-
 export type ExpressionVariable = z.infer<typeof expressionVariable>;
-
-// Binary operation: { operator: "and", operands: [left, right] }
-export const expressionBinary = z.object({
-  operator: z.union([
-    // Assignment operator
-    z.literal("="),
-    // Comparison operators
-    z.literal("=="), z.literal("!="), z.literal("<"), z.literal("<="),
-    z.literal(">"), z.literal(">="), z.literal("==="), z.literal("!=="),
-    // Logical operators
-    z.literal("&&"), z.literal("||"),
-    // Arithmetic operators
-    z.literal("+"), z.literal("-"), z.literal("*"), z.literal("/"),
-    z.literal("%"),
-  ]),
-  operands: z.array(z.lazy(() => expressionAST)).min(2),
-});
-
 export type ExpressionBinary = z.infer<typeof expressionBinary>;
-
-// Unary operation: { operator: "not", operand: { ... } }
-export const expressionUnary = z.object({
-  operator: z.union([
-    z.literal("!"), z.literal("-"), z.literal("+"),
-  ]),
-  operand: z.lazy(() => expressionAST),
-});
-
 export type ExpressionUnary = z.infer<typeof expressionUnary>;
-
-// AST expression (structured format)
-export const expressionAST = z.union([
-  expressionLiteral,
-  expressionVariable,
-  expressionBinary,
-  expressionUnary,
-]);
-
+export type ExpressionCall = z.infer<typeof expressionCall>;
+export type ExpressionAccess = z.infer<typeof expressionAccess>;
+export type ExpressionSequence = z.infer<typeof expressionSequence>;
 export type ExpressionAST = z.infer<typeof expressionAST>;
 
 // Expression can be either a string or structured AST
