@@ -18,6 +18,8 @@ export type {
 	VariableDeclarations,
 	VariableType,
 	ObjectType,
+	ArrayType,
+	EnumType,
 	Property,
 	LTLFormula,
 	LiteralValue,
@@ -74,6 +76,8 @@ export {
 	hybrid,
 	variableType,
 	objectType,
+	arrayType,
+	enumType,
 	literalValue,
 	variableRef,
 	unaryOperator,
@@ -98,6 +102,8 @@ export {
 	isInteraction,
 	isHybrid,
 	isBSIFDocument,
+	isArrayType,
+	isEnumType,
 	semanticsType,
 } from "./schemas.js";
 
