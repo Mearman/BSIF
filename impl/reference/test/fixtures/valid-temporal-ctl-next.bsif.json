@@ -1,0 +1,25 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "ctl-next-example"
+	},
+	"semantics": {
+		"logic": "ctl",
+		"properties": [
+			{
+				"formula": {
+					"operand": {
+						"operator": "variable",
+						"variable": "ready"
+					},
+					"operator": "next"
+				},
+				"name": "next_ready"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"ready": "boolean"
+		}
+	}
+}

@@ -1,0 +1,41 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "ctl-example"
+	},
+	"semantics": {
+		"logic": "ctl",
+		"properties": [
+			{
+				"formula": {
+					"operand": {
+						"operand": {
+							"operands": [
+								{
+									"operator": "variable",
+									"variable": "request"
+								},
+								{
+									"operand": {
+										"operator": "variable",
+										"variable": "response"
+									},
+									"operator": "finally"
+								}
+							],
+							"operator": "implies"
+						},
+						"operator": "globally"
+					},
+					"operator": "not"
+				},
+				"name": "not_always_response"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"request": "boolean",
+			"response": "boolean"
+		}
+	}
+}
