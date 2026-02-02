@@ -41,12 +41,19 @@ export interface ResourceLimits {
 	readonly maxDocumentSize?: number;
 }
 
+export interface CustomValidationRule {
+	readonly name: string;
+	readonly description: string;
+	validate(doc: BSIFDocument): readonly ValidationError[];
+}
+
 export interface ValidationOptions {
 	readonly checkSemantics?: boolean;
 	readonly checkCircularReferences?: boolean;
 	readonly resourceLimits?: ResourceLimits;
 	readonly sourceMap?: SourceMap;
 	readonly file?: string;
+	readonly customRules?: readonly CustomValidationRule[];
 }
 
 const defaultOptions: ValidationOptions = {
@@ -105,6 +112,34 @@ export function validate(document: unknown, options: ValidationOptions = default
 		}
 	}
 
+	// Stage 3: Custom validation rules
+	if (options.customRules && options.customRules.length > 0) {
+		const doc = schemaResult.data;
+		let customErrors: ValidationError[] = [];
+		for (const rule of options.customRules) {
+			const ruleErrors = rule.validate(doc);
+			for (const err of ruleErrors) {
+				customErrors.push({
+					...err,
+					code: err.code ?? ErrorCode.CustomRuleFailed,
+				});
+			}
+		}
+		if (options.sourceMap) {
+			customErrors = [...enrichErrorsWithSourceMap(customErrors, options.sourceMap)];
+		}
+		if (options.file) {
+			customErrors = [...enrichErrorsWithFile(customErrors, options.file)];
+		}
+		if (customErrors.length > 0) {
+			const hasErrors = customErrors.some((e) => e.severity === "error");
+			if (hasErrors) {
+				return createFailure(customErrors);
+			}
+			return { valid: true, errors: customErrors };
+		}
+	}
+
 	return createSuccess();
 }
 
@@ -158,6 +193,12 @@ function validateSemantics(doc: BSIFDocument, resourceLimits?: ResourceLimits): 
 	} else if (isHybrid(doc.semantics)) {
 		errors.push(...validateHybrid(doc.semantics));
 	}
+
+	// Deprecation warnings
+	errors.push(...checkDeprecatedUsage(doc));
+
+	// Optimization suggestions
+	errors.push(...suggestOptimizations(doc));
 
 	return errors;
 }
@@ -463,6 +504,50 @@ function validateStateMachine(sm: StateMachine): readonly ValidationError[] {
 		}
 	}
 
+	// Sync primitives validation: unique names across all states, channel requires capacity
+	const syncNames = new Set<string>();
+	for (const state of sm.states) {
+		if (state.sync) {
+			for (const sp of state.sync) {
+				if (syncNames.has(sp.name)) {
+					errors.push(
+						createError(
+							ErrorCode.InvalidSyncPrimitive,
+							`Duplicate sync primitive name "${sp.name}" across states`,
+							{ severity: "error", path: ["states", state.name, "sync", sp.name] },
+						),
+					);
+				}
+				syncNames.add(sp.name);
+
+				if (sp.type === "channel" && sp.capacity === undefined) {
+					errors.push(
+						createError(
+							ErrorCode.InvalidSyncPrimitive,
+							`Channel sync primitive "${sp.name}" in state "${state.name}" must have a capacity`,
+							{ severity: "error", path: ["states", state.name, "sync", sp.name] },
+						),
+					);
+				}
+			}
+		}
+	}
+
+	// Periodic task validation: states with timing.period but no deadline or timeout
+	for (const state of sm.states) {
+		if (state.timing?.period !== undefined) {
+			if (state.timing.deadline === undefined && state.timing.timeout === undefined) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidPeriodicTask,
+						`State "${state.name}" has timing.period but no deadline or timeout specified`,
+						{ severity: "warning", path: ["states", state.name, "timing"] },
+					),
+				);
+			}
+		}
+	}
+
 	return errors;
 }
 
@@ -577,11 +662,14 @@ function validateTemporal(temporal: Temporal): readonly ValidationError[] {
 	// Validate type references in object properties
 	errors.push(...validateTypeReferences(temporal.variables, ["variables"]));
 
+	// Validate type parameters for object types
+	errors.push(...validateTypeParameters(temporal.variables));
+
 	return errors;
 }
 
 // Check type compatibility: logical operators expect boolean operands
-const LOGICAL_OPERATORS = new Set(["not", "and", "or", "implies", "until", "globally", "finally", "next", "always", "eventually"]);
+const LOGICAL_OPERATORS = new Set(["not", "and", "or", "implies", "until", "globally", "finally", "next", "always", "eventually", "forall-next", "exists-next", "forall-globally", "exists-globally", "forall-finally", "exists-finally", "forall-until", "exists-until"]);
 
 function checkFormulaTypeCompatibility(
 	formula: unknown,
@@ -675,8 +763,8 @@ function collectVariableReferences(formula: unknown): Set<string> {
 }
 
 // Validate formula structure (operand counts, nesting depth)
-const UNARY_OPERATORS = new Set(["not", "globally", "finally", "next", "always", "eventually"]);
-const BINARY_OPERATORS = new Set(["and", "or", "implies", "until"]);
+const UNARY_OPERATORS = new Set(["not", "globally", "finally", "next", "always", "eventually", "forall-next", "exists-next", "forall-globally", "exists-globally", "forall-finally", "exists-finally"]);
+const BINARY_OPERATORS = new Set(["and", "or", "implies", "until", "forall-until", "exists-until"]);
 const MAX_FORMULA_DEPTH = 100;
 
 function validateFormulaStructure(formula: unknown, path: readonly string[], depth: number): readonly ValidationError[] {
@@ -806,6 +894,29 @@ function validateConstraints(constraints: Constraints): readonly ValidationError
 		}
 	}
 
+	// Resource constraints validation
+	if (constraints.resources) {
+		const res = constraints.resources;
+		if (res.cpu && res.cpu.max !== undefined && res.cpu.unit === undefined) {
+			errors.push(
+				createError(
+					ErrorCode.InvalidResourceConstraint,
+					"Resource constraint cpu.max is specified but cpu.unit is missing",
+					{ severity: "warning", path: ["resources", "cpu"] },
+				),
+			);
+		}
+		if (res.memory && res.memory.max !== undefined && res.memory.unit === undefined) {
+			errors.push(
+				createError(
+					ErrorCode.InvalidResourceConstraint,
+					"Resource constraint memory.max is specified but memory.unit is missing",
+					{ severity: "warning", path: ["resources", "memory"] },
+				),
+			);
+		}
+	}
+
 	return errors;
 }
 
@@ -911,6 +1022,19 @@ function validateEvents(events: Events): readonly ValidationError[] {
 		}
 	}
 
+	// Validate correlation keys
+	for (const [eventName, eventDecl] of Object.entries(events.events)) {
+		if (eventDecl.correlationKey !== undefined && eventDecl.correlationKey.trim() === "") {
+			errors.push(
+				createError(
+					ErrorCode.InvalidCorrelationKey,
+					`Event "${eventName}" has an empty correlationKey`,
+					{ path: ["events", eventName, "correlationKey"] },
+				),
+			);
+		}
+	}
+
 	// Validate enum values in event payloads
 	for (const [eventName, eventDecl] of Object.entries(events.events)) {
 		if (eventDecl.payload !== undefined) {
@@ -976,6 +1100,22 @@ function validateInteraction(interaction: Interaction): readonly ValidationError
 					{ path: ["messages", message.to] },
 				),
 			);
+		}
+	}
+
+	// Security properties validation
+	if (interaction.security) {
+		const security = interaction.security;
+		if (security.authorization?.roles && security.authorization.roles.length > 0) {
+			if (security.authentication === "none") {
+				errors.push(
+					createError(
+						ErrorCode.InvalidSecurityProperty,
+						"Interaction has authorization roles but authentication is set to \"none\"",
+						{ path: ["security", "authentication"], suggestion: "Set authentication to a non-\"none\" value when roles are defined" },
+					),
+				);
+			}
 		}
 	}
 
@@ -1388,6 +1528,167 @@ function findRegion(stateName: string, regionMap: Map<string, Set<string>>): str
 		if (members.has(stateName)) return regionName;
 	}
 	return undefined;
+}
+
+function validateTypeParameters(variables: Record<string, unknown>): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	for (const [varName, varType] of Object.entries(variables)) {
+		if (typeof varType !== "object" || varType === null) continue;
+		if (!("type" in varType) || varType.type !== "object") continue;
+		if (!("typeParameters" in varType) || !Array.isArray(varType.typeParameters)) continue;
+
+		const paramNames = new Set<string>();
+		for (const param of varType.typeParameters) {
+			if (typeof param === "object" && param !== null && "name" in param && typeof param.name === "string") {
+				if (paramNames.has(param.name)) {
+					errors.push(
+						createError(
+							ErrorCode.InvalidTypeParameter,
+							`Duplicate type parameter name "${param.name}" in variable "${varName}"`,
+							{ path: ["variables", varName, "typeParameters"] },
+						),
+					);
+				}
+				paramNames.add(param.name);
+			}
+		}
+	}
+
+	return errors;
+}
+
+//==============================================================================
+// Deprecation Warnings
+//==============================================================================
+
+const BARE_TEMPORAL_OPERATORS = new Set(["globally", "finally", "always", "eventually"]);
+
+function checkDeprecatedUsage(doc: BSIFDocument): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	if (!isTemporal(doc.semantics)) return errors;
+	if (doc.semantics.logic !== "ctl") return errors;
+
+	for (const property of doc.semantics.properties) {
+		const bareOps = collectBareTemporalOperators(property.formula);
+		for (const op of bareOps) {
+			errors.push(
+				createError(
+					ErrorCode.DeprecatedUsage,
+					`Property "${property.name}" uses bare "${op}" operator under CTL logic. Consider using explicit path quantifiers (forall-${op === "always" ? "globally" : op === "eventually" ? "finally" : op} or exists-${op === "always" ? "globally" : op === "eventually" ? "finally" : op}).`,
+					{ severity: "warning", path: ["properties", property.name] },
+				),
+			);
+		}
+	}
+
+	return errors;
+}
+
+function collectBareTemporalOperators(formula: unknown): Set<string> {
+	const ops = new Set<string>();
+	if (typeof formula !== "object" || formula === null) return ops;
+	if (!("operator" in formula) || typeof formula.operator !== "string") return ops;
+
+	if (BARE_TEMPORAL_OPERATORS.has(formula.operator)) {
+		ops.add(formula.operator);
+	}
+
+	if ("operand" in formula) {
+		for (const op of collectBareTemporalOperators(formula.operand)) {
+			ops.add(op);
+		}
+	}
+	if ("operands" in formula && Array.isArray(formula.operands)) {
+		for (const operand of formula.operands) {
+			for (const op of collectBareTemporalOperators(operand)) {
+				ops.add(op);
+			}
+		}
+	}
+
+	return ops;
+}
+
+//==============================================================================
+// Optimization Suggestions
+//==============================================================================
+
+function suggestOptimizations(doc: BSIFDocument): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+
+	// Redundant guards in state machine transitions
+	if (isStateMachine(doc.semantics)) {
+		for (const t of doc.semantics.transitions) {
+			if (t.guard !== undefined) {
+				const normalized = t.guard.trim().toLowerCase();
+				if (normalized === "true" || normalized === "1 == 1" || normalized === "1==1") {
+					errors.push(
+						createError(
+							ErrorCode.OptimizationSuggestion,
+							`Transition ${t.from} -> ${t.to} has redundant guard "${t.guard}" which is always true`,
+							{ severity: "warning", path: ["transitions", t.from, "guard"] },
+						),
+					);
+				}
+			}
+		}
+	}
+
+	// Simplifiable formulas in temporal logic
+	if (isTemporal(doc.semantics)) {
+		for (const property of doc.semantics.properties) {
+			errors.push(...detectSimplifiableFormulas(property.formula, property.name));
+		}
+	}
+
+	return errors;
+}
+
+function detectSimplifiableFormulas(formula: unknown, propertyName: string): readonly ValidationError[] {
+	const errors: ValidationError[] = [];
+	if (typeof formula !== "object" || formula === null) return errors;
+	if (!("operator" in formula) || typeof formula.operator !== "string") return errors;
+
+	// Double negation: not(not(x))
+	if (formula.operator === "not" && "operand" in formula) {
+		const inner = formula.operand;
+		if (typeof inner === "object" && inner !== null && "operator" in inner && inner.operator === "not") {
+			errors.push(
+				createError(
+					ErrorCode.OptimizationSuggestion,
+					`Property "${propertyName}" contains double negation not(not(...)) which can be simplified`,
+					{ severity: "warning", path: ["properties", propertyName] },
+				),
+			);
+		}
+	}
+
+	// Single-operand and/or
+	if ((formula.operator === "and" || formula.operator === "or") && "operands" in formula && Array.isArray(formula.operands)) {
+		if (formula.operands.length === 1) {
+			errors.push(
+				createError(
+					ErrorCode.OptimizationSuggestion,
+					`Property "${propertyName}" contains ${formula.operator}([x]) with a single operand which is unnecessary`,
+					{ severity: "warning", path: ["properties", propertyName] },
+				),
+			);
+		}
+	}
+
+	// Recurse into children
+	if ("operand" in formula) {
+		errors.push(...detectSimplifiableFormulas(formula.operand, propertyName));
+	}
+	if ("operands" in formula && Array.isArray(formula.operands)) {
+		for (const operand of formula.operands) {
+			errors.push(...detectSimplifiableFormulas(operand, propertyName));
+		}
+	}
+
+	return errors;
 }
 
 function isCompatibleVersion(version: string): boolean {
