@@ -63,6 +63,36 @@ export const enum ErrorCode {
 	DuplicateEnumValue = "E135",
 	UndefinedTypeReference = "E136",
 
+	// Composition errors (E140-E149)
+	UnresolvableReference = "E140",
+	CircularCompositionReference = "E141",
+	ReferenceVersionMismatch = "E142",
+	CompositionNamespaceConflict = "E143",
+
+	// Lint rules (E400-E409)
+	LintMissingDescription = "E400",
+	LintMissingVersion = "E401",
+	LintNamingConvention = "E402",
+	LintUnusedEvent = "E403",
+	LintEmptyToolMapping = "E404",
+	LintDeepNesting = "E405",
+	LintNoFinalStates = "E406",
+
+	// Executor errors (E600-E609)
+	InvalidEvent = "E600",
+	InvalidGuard = "E601",
+	ExecutorError = "E602",
+
+	// Mapper errors (E700-E709)
+	UnsupportedMapperType = "E700",
+	MapperConversionError = "E701",
+
+	// Registry errors (E800-E809)
+	RegistryPublishFailed = "E800",
+	RegistryFetchFailed = "E801",
+	RegistryNotFound = "E802",
+	RegistryValidationFailed = "E803",
+
 	// General validation errors (E200-E299)
 	ValidationFailed = "E200",
 }
