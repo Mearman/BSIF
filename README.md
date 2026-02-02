@@ -121,7 +121,7 @@ Write your behavioral specification once, verify it against any implementation.
 | **JSON Schema validator** | ✅ Complete |
 | **Example specifications** | ✅ Complete |
 | **Conformance tests** | ✅ Complete |
-| **Reference implementation** | ⏳ Not Started |
+| **Reference implementation** | ✅ Complete |
 
 ---
 
