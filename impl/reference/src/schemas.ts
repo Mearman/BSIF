@@ -26,6 +26,100 @@ export function isBSIFMetadata(value: unknown): value is BSIFMetadata {
 }
 
 //==============================================================================
+// Expression Schemas
+//==============================================================================
+
+/**
+ * Structured expression format for guards, actions, and formulas
+ * Provides validation and tooling support while maintaining string compatibility
+ */
+
+// Literal values (numbers, strings, booleans)
+export const expressionLiteral = z.object({
+  literal: z.union([z.boolean(), z.number(), z.string()]),
+});
+
+export type ExpressionLiteral = z.infer<typeof expressionLiteral>;
+
+// Variable reference
+export const expressionVariable = z.object({
+  variable: z.string(),
+});
+
+export type ExpressionVariable = z.infer<typeof expressionVariable>;
+
+// Binary operation: { operator: "and", operands: [left, right] }
+export const expressionBinary = z.object({
+  operator: z.union([
+    // Assignment operator
+    z.literal("="),
+    // Comparison operators
+    z.literal("=="), z.literal("!="), z.literal("<"), z.literal("<="),
+    z.literal(">"), z.literal(">="), z.literal("==="), z.literal("!=="),
+    // Logical operators
+    z.literal("&&"), z.literal("||"),
+    // Arithmetic operators
+    z.literal("+"), z.literal("-"), z.literal("*"), z.literal("/"),
+    z.literal("%"),
+  ]),
+  operands: z.array(z.lazy(() => expressionAST)).min(2),
+});
+
+export type ExpressionBinary = z.infer<typeof expressionBinary>;
+
+// Unary operation: { operator: "not", operand: { ... } }
+export const expressionUnary = z.object({
+  operator: z.union([
+    z.literal("!"), z.literal("-"), z.literal("+"),
+  ]),
+  operand: z.lazy(() => expressionAST),
+});
+
+export type ExpressionUnary = z.infer<typeof expressionUnary>;
+
+// AST expression (structured format)
+export const expressionAST = z.union([
+  expressionLiteral,
+  expressionVariable,
+  expressionBinary,
+  expressionUnary,
+]);
+
+export type ExpressionAST = z.infer<typeof expressionAST>;
+
+// Expression can be either a string or structured AST
+export const expression = z.union([
+  z.string().max(8192),
+  expressionAST,
+]);
+
+export type Expression = z.infer<typeof expression>;
+
+export function isExpression(value: unknown): value is Expression {
+	return expression.safeParse(value).success;
+}
+
+/**
+ * Check if an expression is a string (simple format)
+ */
+export function isStringExpression(value: unknown): value is string {
+	if (typeof value !== "string") return false;
+	return expression.safeParse(value).success;
+}
+
+/**
+ * Check if an expression is structured AST format
+ */
+export function isASTExpression(value: unknown): value is ExpressionAST {
+	if (typeof value === "string") return false;
+	try {
+		return expressionAST.safeParse(value).success;
+	} catch {
+		return false;
+	}
+}
+
+//==============================================================================
 // Timing Constraint Schemas
 //==============================================================================
 
@@ -57,8 +151,8 @@ export type SyncPrimitive = z.infer<typeof syncPrimitive>;
 
 export const state = z.object({
 	name: z.string().min(1).max(256),
-	entry: z.string().max(4096).optional(),
-	exit: z.string().max(4096).optional(),
+	entry: expression.optional(),
+	exit: expression.optional(),
 	parent: z.string().optional(),
 	parallel: z.boolean().optional(),
 	timing: timingConstraint.optional(),
@@ -75,8 +169,8 @@ export const transition = z.object({
 	from: z.string().min(1),
 	to: z.string().min(1),
 	event: z.string().optional(),
-	guard: z.string().max(4096).optional(),
-	action: z.string().max(4096).optional(),
+	guard: expression.optional(),
+	action: expression.optional(),
 	timing: timingConstraint.optional(),
 });
 
@@ -376,7 +470,7 @@ export const messageSequence = z.object({
 	to: z.string(),
 	message: z.string(),
 	payload: typeDefinition.optional(),
-	guard: z.string().max(4096).optional(),
+	guard: expression.optional(),
 	sequence: z.number().int().nonnegative().optional(),
 });
 
