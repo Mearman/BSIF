@@ -243,6 +243,62 @@ function validateStateMachine(sm: StateMachine): readonly ValidationError[] {
 		}
 	}
 
+	// Parent reference validation
+	for (const state of sm.states) {
+		if (state.parent !== undefined && !stateNames.has(state.parent)) {
+			errors.push(
+				createError(
+					ErrorCode.StateNotFound,
+					`State "${state.name}" references non-existent parent "${state.parent}"`,
+					{ path: ["states", state.name, "parent"] },
+				),
+			);
+		}
+	}
+
+	// Parallel region independence: transitions between sibling parallel regions
+	for (const state of sm.states) {
+		if (state.parallel) {
+			const children = sm.states.filter((s) => s.parent === state.name);
+			const regionMap = new Map<string, Set<string>>();
+			for (const child of children) {
+				const region = collectDescendants(child.name, sm.states);
+				region.add(child.name);
+				regionMap.set(child.name, region);
+			}
+
+			for (const t of sm.transitions) {
+				const fromRegion = findRegion(t.from, regionMap);
+				const toRegion = findRegion(t.to, regionMap);
+				if (fromRegion !== undefined && toRegion !== undefined && fromRegion !== toRegion) {
+					errors.push(
+						createError(
+							ErrorCode.ParallelRegionTransition,
+							`Transition from "${t.from}" to "${t.to}" crosses parallel regions of state "${state.name}" (from region "${fromRegion}" to region "${toRegion}")`,
+							{ severity: "warning", path: ["transitions", t.from] },
+						),
+					);
+				}
+			}
+		}
+	}
+
+	// Nested parallelism warning
+	for (const state of sm.states) {
+		if (state.parallel && state.parent !== undefined) {
+			const parentState = sm.states.find((s) => s.name === state.parent);
+			if (parentState?.parallel) {
+				errors.push(
+					createError(
+						ErrorCode.NestedParallelState,
+						`Parallel state "${state.name}" is nested inside parallel state "${state.parent}". Nested parallelism semantics are not defined by the BSIF specification.`,
+						{ severity: "warning", path: ["states", state.name] },
+					),
+				);
+			}
+		}
+	}
+
 	// Timing constraint validation
 	for (const t of sm.transitions) {
 		if (t.timing) {
@@ -1029,6 +1085,29 @@ function measureNestingDepth(value: unknown, currentDepth: number): number {
 	}
 
 	return maxDepth;
+}
+
+function collectDescendants(stateName: string, states: readonly State[]): Set<string> {
+	const descendants = new Set<string>();
+	const queue = [stateName];
+	while (queue.length > 0) {
+		const current = queue.pop();
+		if (current === undefined) break;
+		for (const s of states) {
+			if (s.parent === current && !descendants.has(s.name)) {
+				descendants.add(s.name);
+				queue.push(s.name);
+			}
+		}
+	}
+	return descendants;
+}
+
+function findRegion(stateName: string, regionMap: Map<string, Set<string>>): string | undefined {
+	for (const [regionName, members] of regionMap) {
+		if (members.has(stateName)) return regionName;
+	}
+	return undefined;
 }
 
 function isCompatibleVersion(version: string): boolean {
