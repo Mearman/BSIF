@@ -3,7 +3,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 import { join } from "node:path";
-import { parseFile, parseContent } from "../src/parser.js";
+import { parseFile, parseContent, parseFileWithValidation } from "../src/parser.js";
+import { ErrorCode } from "../src/errors.js";
 import { isBSIFDocument, isStateMachine } from "../src/schemas.js";
 
 describe("Parser", () => {
@@ -70,6 +71,27 @@ semantics:
 
 			assert.strictEqual(doc.metadata.name, "test-spec");
 			assert.strictEqual(isBSIFDocument(doc), true);
+		});
+	});
+
+	describe("parseFileWithValidation", () => {
+		it("returns validation result with original error code for invalid files", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-version.bsif.json");
+			const result = await parseFileWithValidation(fixturePath);
+
+			assert.strictEqual(result.valid, false);
+			assert.ok(result.errors.length > 0);
+			// The error should retain its original code (not be wrapped in ValidationFailed)
+			// because isValidationError correctly identifies plain ValidationError objects
+			assert.notStrictEqual(result.errors[0]?.code, ErrorCode.ValidationFailed);
+		});
+
+		it("returns success for valid files", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "valid.bsif.json");
+			const result = await parseFileWithValidation(fixturePath);
+
+			assert.strictEqual(result.valid, true);
+			assert.strictEqual(result.errors.length, 0);
 		});
 	});
 });
