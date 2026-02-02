@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "negative-timing"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "idle" },
+      { "name": "active" }
+    ],
+    "transitions": [
+      {
+        "from": "idle",
+        "to": "active",
+        "event": "start",
+        "timing": {
+          "deadline": -100,
+          "unit": "ms"
+        }
+      }
+    ],
+    "initial": "idle"
+  }
+}

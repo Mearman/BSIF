@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "unicode-名前-спецификация",
+    "version": "1.0.0",
+    "description": "State machine with Unicode state names"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "初期" },
+      { "name": "активный" },
+      { "name": "완료" }
+    ],
+    "transitions": [
+      {
+        "from": "初期",
+        "to": "активный",
+        "event": "start"
+      },
+      {
+        "from": "активный",
+        "to": "완료",
+        "event": "finish"
+      }
+    ],
+    "initial": "初期",
+    "final": ["완료"]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": ""
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "idle" }
+    ],
+    "transitions": [],
+    "initial": "idle"
+  }
+}

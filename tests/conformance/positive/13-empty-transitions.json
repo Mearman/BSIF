@@ -1,0 +1,16 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "empty-transitions",
+    "version": "1.0.0",
+    "description": "State machine with states but no transitions"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "only-state" }
+    ],
+    "transitions": [],
+    "initial": "only-state"
+  }
+}

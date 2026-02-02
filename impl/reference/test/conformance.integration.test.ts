@@ -46,11 +46,11 @@ describe("Conformance Tests", () => {
 		}
 	});
 
-	it("should have exactly 10 positive conformance tests", () => {
-		assert.strictEqual(positiveFiles.length, 10, `Expected 10 positive tests, found ${positiveFiles.length}`);
+	it("should have exactly 15 positive conformance tests", () => {
+		assert.strictEqual(positiveFiles.length, 15, `Expected 15 positive tests, found ${positiveFiles.length}`);
 	});
 
-	it("should have exactly 10 negative conformance tests", () => {
-		assert.strictEqual(negativeFiles.length, 10, `Expected 10 negative tests, found ${negativeFiles.length}`);
+	it("should have exactly 15 negative conformance tests", () => {
+		assert.strictEqual(negativeFiles.length, 15, `Expected 15 negative tests, found ${negativeFiles.length}`);
 	});
 });

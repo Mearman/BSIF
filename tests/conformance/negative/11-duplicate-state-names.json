@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "duplicate-states"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "idle" },
+      { "name": "active" },
+      { "name": "idle" }
+    ],
+    "transitions": [
+      { "from": "idle", "to": "active", "event": "go" }
+    ],
+    "initial": "idle"
+  }
+}

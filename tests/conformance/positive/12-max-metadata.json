@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "all-metadata-fields",
+    "version": "2.5.0-beta.1",
+    "description": "Specification exercising every optional metadata field with maximum detail",
+    "author": "Test Author <test@example.com>",
+    "license": "Apache-2.0",
+    "references": [
+      "https://example.com/specs/base-protocol",
+      "https://example.com/specs/extension-v2"
+    ]
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "ready" }
+    ],
+    "transitions": [],
+    "initial": "ready"
+  }
+}

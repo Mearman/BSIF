@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "nested-hybrid",
+    "version": "1.0.0",
+    "description": "Hybrid with multiple component types including constraints and events"
+  },
+  "semantics": {
+    "type": "hybrid",
+    "components": [
+      {
+        "type": "state-machine",
+        "states": [
+          { "name": "idle" },
+          { "name": "processing" }
+        ],
+        "transitions": [
+          { "from": "idle", "to": "processing", "event": "submit" }
+        ],
+        "initial": "idle"
+      },
+      {
+        "type": "constraints",
+        "target": { "function": "processRequest" },
+        "preconditions": [
+          { "description": "input not empty", "expression": "len(input) > 0" }
+        ],
+        "postconditions": [
+          { "description": "result defined", "expression": "result != null" }
+        ]
+      },
+      {
+        "type": "events",
+        "events": {
+          "RequestReceived": { "payload": "string" }
+        },
+        "handlers": [
+          { "event": "RequestReceived", "action": "processRequest(payload)" }
+        ]
+      }
+    ]
+  }
+}

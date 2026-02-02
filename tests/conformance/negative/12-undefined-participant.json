@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "undefined-participant"
+  },
+  "semantics": {
+    "type": "interaction",
+    "participants": [
+      { "name": "client" },
+      { "name": "server" }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "database",
+        "message": "query"
+      }
+    ]
+  }
+}

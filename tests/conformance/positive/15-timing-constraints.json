@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "timing-constraints",
+    "version": "1.0.0",
+    "description": "State machine with full timing constraint usage"
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "waiting" },
+      { "name": "processing" },
+      { "name": "done" }
+    ],
+    "transitions": [
+      {
+        "from": "waiting",
+        "to": "processing",
+        "event": "start",
+        "timing": {
+          "deadline": 5000,
+          "timeout": 1000,
+          "unit": "ms"
+        }
+      },
+      {
+        "from": "processing",
+        "to": "done",
+        "event": "complete",
+        "timing": {
+          "period": 100,
+          "unit": "ms"
+        }
+      }
+    ],
+    "initial": "waiting",
+    "final": ["done"]
+  }
+}

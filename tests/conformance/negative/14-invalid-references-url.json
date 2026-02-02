@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "bsif_version": "1.0.0",
+    "name": "invalid-ref-url",
+    "references": [
+      "not-a-valid-url",
+      "also invalid"
+    ]
+  },
+  "semantics": {
+    "type": "state-machine",
+    "states": [
+      { "name": "idle" }
+    ],
+    "transitions": [],
+    "initial": "idle"
+  }
+}
