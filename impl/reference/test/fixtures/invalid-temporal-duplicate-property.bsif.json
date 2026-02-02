@@ -1,0 +1,23 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-temporal-duplicate"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": { "operator": "variable", "variable": "p" },
+				"name": "prop1"
+			},
+			{
+				"formula": { "operator": "variable", "variable": "p" },
+				"name": "prop1"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"p": "boolean"
+		}
+	}
+}

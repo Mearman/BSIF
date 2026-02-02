@@ -1,0 +1,25 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-interaction"
+	},
+	"semantics": {
+		"messages": [
+			{
+				"from": "client",
+				"message": "request",
+				"to": "server"
+			},
+			{
+				"from": "server",
+				"message": "response",
+				"to": "client"
+			}
+		],
+		"participants": [
+			{ "name": "client", "role": "requester" },
+			{ "name": "server", "role": "responder" }
+		],
+		"type": "interaction"
+	}
+}

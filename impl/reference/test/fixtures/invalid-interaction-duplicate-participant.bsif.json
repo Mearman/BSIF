@@ -1,0 +1,14 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-interaction-duplicate"
+	},
+	"semantics": {
+		"messages": [],
+		"participants": [
+			{ "name": "client" },
+			{ "name": "client" }
+		],
+		"type": "interaction"
+	}
+}

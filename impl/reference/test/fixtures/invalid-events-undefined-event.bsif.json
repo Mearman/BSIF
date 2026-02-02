@@ -1,0 +1,20 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-events-undefined"
+	},
+	"semantics": {
+		"events": {
+			"click": {
+				"payload": "string"
+			}
+		},
+		"handlers": [
+			{
+				"action": "handle()",
+				"event": "nonexistent"
+			}
+		],
+		"type": "events"
+	}
+}

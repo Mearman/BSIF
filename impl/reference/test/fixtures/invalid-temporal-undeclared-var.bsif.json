@@ -1,0 +1,22 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-temporal-undeclared"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": {
+					"operator": "variable",
+					"variable": "r"
+				},
+				"name": "uses_undeclared"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"p": "boolean"
+		}
+	}
+}

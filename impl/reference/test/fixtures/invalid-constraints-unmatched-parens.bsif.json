@@ -1,0 +1,19 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-constraints-parens"
+	},
+	"semantics": {
+		"postconditions": [],
+		"preconditions": [
+			{
+				"description": "Bad expression",
+				"expression": "(size > 0"
+			}
+		],
+		"target": {
+			"function": "pop"
+		},
+		"type": "constraints"
+	}
+}

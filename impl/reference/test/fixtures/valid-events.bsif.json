@@ -1,0 +1,27 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-events"
+	},
+	"semantics": {
+		"events": {
+			"click": {
+				"payload": "string"
+			},
+			"submit": {
+				"payload": "string"
+			}
+		},
+		"handlers": [
+			{
+				"action": "handleClick()",
+				"event": "click"
+			},
+			{
+				"action": "handleSubmit()",
+				"event": "submit"
+			}
+		],
+		"type": "events"
+	}
+}

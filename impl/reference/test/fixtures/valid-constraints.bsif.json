@@ -1,0 +1,31 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-constraints"
+	},
+	"semantics": {
+		"invariants": [
+			{
+				"description": "Size is non-negative",
+				"expression": "size >= 0"
+			}
+		],
+		"postconditions": [
+			{
+				"description": "Size increases by one",
+				"expression": "size == old.size + 1"
+			}
+		],
+		"preconditions": [
+			{
+				"description": "Stack is not full",
+				"expression": "size < capacity"
+			}
+		],
+		"target": {
+			"class": "Stack",
+			"function": "push"
+		},
+		"type": "constraints"
+	}
+}

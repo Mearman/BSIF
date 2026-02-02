@@ -1,0 +1,35 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-hybrid"
+	},
+	"semantics": {
+		"components": [
+			{
+				"initial": "idle",
+				"states": [
+					{ "name": "idle" },
+					{ "name": "active" }
+				],
+				"transitions": [
+					{ "from": "idle", "to": "active" }
+				],
+				"type": "state-machine"
+			},
+			{
+				"logic": "ltl",
+				"properties": [
+					{
+						"formula": { "operator": "variable", "variable": "x" },
+						"name": "basic"
+					}
+				],
+				"type": "temporal",
+				"variables": {
+					"x": "boolean"
+				}
+			}
+		],
+		"type": "hybrid"
+	}
+}

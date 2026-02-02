@@ -1,0 +1,20 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-interaction-undefined"
+	},
+	"semantics": {
+		"messages": [
+			{
+				"from": "client",
+				"message": "request",
+				"to": "unknown"
+			}
+		],
+		"participants": [
+			{ "name": "client" },
+			{ "name": "server" }
+		],
+		"type": "interaction"
+	}
+}

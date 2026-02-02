@@ -1,0 +1,29 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-temporal"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": {
+					"operand": {
+						"operands": [
+							{ "operator": "variable", "variable": "p" },
+							{ "operand": { "operator": "variable", "variable": "q" }, "operator": "finally" }
+						],
+						"operator": "implies"
+					},
+					"operator": "globally"
+				},
+				"name": "p_implies_eventually_q"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"p": "boolean",
+			"q": "boolean"
+		}
+	}
+}

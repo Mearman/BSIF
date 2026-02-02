@@ -1,0 +1,22 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-hybrid-bad"
+	},
+	"semantics": {
+		"components": [
+			{
+				"initial": "idle",
+				"states": [
+					{ "name": "idle" }
+				],
+				"transitions": [],
+				"type": "state-machine"
+			},
+			{
+				"type": "invalid-type"
+			}
+		],
+		"type": "hybrid"
+	}
+}
