@@ -111,8 +111,8 @@ export {
 // Parser
 //==============================================================================
 
-export { parseFile, parseFileSync, parseFileString, parseContent } from "./parser.js";
-export type { ParseOptions } from "./parser.js";
+export { parseFile, parseFileSync, parseFileString, parseContent, parseContentWithSourceMap, buildSourceMap, resolveLocation, findPathOffset } from "./parser.js";
+export type { ParseOptions, SourceMap } from "./parser.js";
 
 //==============================================================================
 // Validator
@@ -122,7 +122,59 @@ export { validate, validateFile } from "./validator.js";
 export type { ValidationOptions, ResourceLimits } from "./validator.js";
 
 //==============================================================================
+// Resolver
+//==============================================================================
+
+export { resolveReferences, validateComposition } from "./resolver.js";
+export type { ResolveOptions, ResolvedDocument } from "./resolver.js";
+
+//==============================================================================
+// Linter
+//==============================================================================
+
+export { lint } from "./linter.js";
+export type { LintOptions } from "./linter.js";
+
+//==============================================================================
+// Generators
+//==============================================================================
+
+export { generateTests } from "./generators/test-generator.js";
+export type { GenerateOptions, GeneratedTestSuite, TestGenerator } from "./generators/test-generator.js";
+
+//==============================================================================
 // CLI
 //==============================================================================
 
 export { main as cliMain } from "./cli.js";
+
+//==============================================================================
+// Executors
+//==============================================================================
+
+export { createStateMachine } from "./executors/state-machine-executor.js";
+export type { StateMachineInstance } from "./executors/state-machine-executor.js";
+export { checkTrace } from "./executors/ltl-checker.js";
+export type { TraceStep, CheckResult } from "./executors/ltl-checker.js";
+export { generateMonitor } from "./generators/monitor-generator.js";
+export type { GeneratedMonitor } from "./generators/monitor-generator.js";
+
+//==============================================================================
+// Mappers
+//==============================================================================
+
+export { TLAPlusMapper } from "./mappers/tlaplus.js";
+export { SCXMLMapper } from "./mappers/scxml.js";
+export { SMTLIBMapper } from "./mappers/smtlib.js";
+export type { Mapper } from "./mappers/mapper.js";
+
+//==============================================================================
+// Registry
+//==============================================================================
+
+export { HttpRegistryClient } from "./registry/client.js";
+export type { RegistryClient } from "./registry/client.js";
+export { RegistryServer } from "./registry/server.js";
+export type { RegistryServerOptions } from "./registry/server.js";
+export { FileStorage } from "./registry/storage.js";
+export type { RegistryEntry, RegistrySearchResult } from "./registry/types.js";
