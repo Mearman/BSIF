@@ -1,0 +1,19 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "empty-tool"
+	},
+	"semantics": {
+		"initial": "idle",
+		"states": [
+			{
+				"name": "idle"
+			}
+		],
+		"transitions": [],
+		"type": "state-machine"
+	},
+	"tools": {
+		"empty-tool": {}
+	}
+}

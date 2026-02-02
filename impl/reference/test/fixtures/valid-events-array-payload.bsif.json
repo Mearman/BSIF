@@ -1,0 +1,23 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "events-array-payload"
+	},
+	"semantics": {
+		"events": {
+			"batch_update": {
+				"payload": {
+					"items": "string",
+					"type": "array"
+				}
+			}
+		},
+		"handlers": [
+			{
+				"action": "processBatch()",
+				"event": "batch_update"
+			}
+		],
+		"type": "events"
+	}
+}

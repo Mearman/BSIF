@@ -1,0 +1,29 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "array-type-example"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": {
+					"operand": {
+						"operator": "variable",
+						"variable": "is_valid"
+					},
+					"operator": "globally"
+				},
+				"name": "always_valid"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"is_valid": "boolean",
+			"items": {
+				"items": "string",
+				"type": "array"
+			}
+		}
+	}
+}

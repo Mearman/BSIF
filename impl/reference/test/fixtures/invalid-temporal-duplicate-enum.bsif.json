@@ -1,0 +1,33 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "duplicate-enum"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": {
+					"operand": {
+						"operator": "variable",
+						"variable": "is_ok"
+					},
+					"operator": "globally"
+				},
+				"name": "always_ok"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"is_ok": "boolean",
+			"status": {
+				"type": "enum",
+				"values": [
+					"active",
+					"inactive",
+					"active"
+				]
+			}
+		}
+	}
+}

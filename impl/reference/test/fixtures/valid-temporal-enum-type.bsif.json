@@ -1,0 +1,33 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "enum-type-example"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": {
+					"operand": {
+						"operator": "variable",
+						"variable": "is_active"
+					},
+					"operator": "globally"
+				},
+				"name": "always_active"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"is_active": "boolean",
+			"status": {
+				"type": "enum",
+				"values": [
+					"pending",
+					"active",
+					"completed"
+				]
+			}
+		}
+	}
+}

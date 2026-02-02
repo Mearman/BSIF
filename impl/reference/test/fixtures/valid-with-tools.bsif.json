@@ -1,0 +1,24 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "with-tools"
+	},
+	"semantics": {
+		"initial": "idle",
+		"states": [
+			{
+				"name": "idle"
+			}
+		],
+		"transitions": [],
+		"type": "state-machine"
+	},
+	"tools": {
+		"scxml": {
+			"xml": "<scxml/>"
+		},
+		"tlaplus": {
+			"module": "MODULE Example"
+		}
+	}
+}

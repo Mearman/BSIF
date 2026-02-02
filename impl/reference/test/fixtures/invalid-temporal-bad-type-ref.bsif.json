@@ -1,0 +1,31 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "bad-type-ref"
+	},
+	"semantics": {
+		"logic": "ltl",
+		"properties": [
+			{
+				"formula": {
+					"operand": {
+						"operator": "variable",
+						"variable": "is_ok"
+					},
+					"operator": "globally"
+				},
+				"name": "always_ok"
+			}
+		],
+		"type": "temporal",
+		"variables": {
+			"data": {
+				"properties": {
+					"ref_field": "NonExistentType"
+				},
+				"type": "object"
+			},
+			"is_ok": "boolean"
+		}
+	}
+}
