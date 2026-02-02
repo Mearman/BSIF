@@ -167,6 +167,64 @@ export async function parseFileWithValidation(
 	}
 }
 
+//==============================================================================
+// Source Map (Line/Column Tracking)
+//==============================================================================
+
+export interface SourceMap {
+	readonly lineOffsets: readonly number[];
+	readonly rawText: string;
+}
+
+export function buildSourceMap(text: string): SourceMap {
+	const lineOffsets: number[] = [0];
+	for (let i = 0; i < text.length; i++) {
+		if (text[i] === "\n") {
+			lineOffsets.push(i + 1);
+		}
+	}
+	return { lineOffsets, rawText: text };
+}
+
+export function resolveLocation(sourceMap: SourceMap, charOffset: number): { line: number; column: number } {
+	// Binary search for the line
+	let low = 0;
+	let high = sourceMap.lineOffsets.length - 1;
+	while (low < high) {
+		const mid = Math.ceil((low + high) / 2);
+		if (sourceMap.lineOffsets[mid]! <= charOffset) {
+			low = mid;
+		} else {
+			high = mid - 1;
+		}
+	}
+	return {
+		line: low + 1,
+		column: charOffset - sourceMap.lineOffsets[low]! + 1,
+	};
+}
+
+export function findPathOffset(sourceMap: SourceMap, path: readonly string[]): number | undefined {
+	const text = sourceMap.rawText;
+	let searchStart = 0;
+
+	for (const segment of path) {
+		// Search for the key in JSON (look for "key":)
+		const keyPattern = `"${segment}"`;
+		const idx = text.indexOf(keyPattern, searchStart);
+		if (idx === -1) return undefined;
+		searchStart = idx;
+	}
+
+	return searchStart;
+}
+
+export function parseContentWithSourceMap(content: string, path = "<unknown>"): { document: BSIFDocument; sourceMap: SourceMap } {
+	const document = parseContent(content, path);
+	const sourceMap = buildSourceMap(content);
+	return { document, sourceMap };
+}
+
 function isValidationError(error: unknown): error is ValidationError {
 	return (
 		typeof error === "object" &&
