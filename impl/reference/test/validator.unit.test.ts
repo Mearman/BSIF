@@ -439,6 +439,132 @@ describe("Validator", () => {
 		});
 	});
 
+	describe("CTL temporal validation", () => {
+		it("warns about undefined CTL semantics", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "temporal",
+					logic: "ctl",
+					variables: { p: "boolean" },
+					properties: [
+						{
+							name: "always_p",
+							formula: { operator: "globally", operand: { operator: "variable", variable: "p" } },
+						},
+					],
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const ctlWarning = result.errors.find((e) => e.code === ErrorCode.CTLSemanticsUndefined);
+			assert.ok(ctlWarning, "Should have CTLSemanticsUndefined warning");
+			assert.strictEqual(ctlWarning.severity, "warning");
+		});
+
+		it("warns about ambiguous next operator under CTL", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "temporal",
+					logic: "ctl",
+					variables: { ready: "boolean" },
+					properties: [
+						{
+							name: "next_ready",
+							formula: { operator: "next", operand: { operator: "variable", variable: "ready" } },
+						},
+					],
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const ambiguousWarning = result.errors.find((e) => e.code === ErrorCode.CTLOperatorAmbiguous);
+			assert.ok(ambiguousWarning, "Should have CTLOperatorAmbiguous warning");
+			assert.match(ambiguousWarning.message, /next/);
+		});
+
+		it("validates CTL formulas structurally same as LTL", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "temporal",
+					logic: "ctl",
+					variables: { p: "boolean", q: "boolean" },
+					properties: [
+						{
+							name: "response",
+							formula: {
+								operator: "globally",
+								operand: {
+									operator: "implies",
+									operands: [
+										{ operator: "variable", variable: "p" },
+										{ operator: "finally", operand: { operator: "variable", variable: "q" } },
+									],
+								},
+							},
+						},
+					],
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true });
+
+			// Should pass structurally (only CTL warning, no structural errors)
+			const structErrors = result.errors.filter((e) => e.code !== ErrorCode.CTLSemanticsUndefined);
+			assert.strictEqual(structErrors.length, 0);
+		});
+
+		it("rejects CTL document with undeclared variables", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "temporal",
+					logic: "ctl",
+					variables: { p: "boolean" },
+					properties: [
+						{
+							name: "use_undeclared",
+							formula: { operator: "globally", operand: { operator: "variable", variable: "unknown_var" } },
+						},
+					],
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const undefError = result.errors.find((e) => e.code === ErrorCode.UndefinedVariable);
+			assert.ok(undefError, "Should have UndefinedVariable error");
+		});
+
+		it("does not warn about next operator under LTL", () => {
+			const doc = {
+				metadata: { bsif_version: "1.0.0", name: "test" },
+				semantics: {
+					type: "temporal",
+					logic: "ltl",
+					variables: { ready: "boolean" },
+					properties: [
+						{
+							name: "next_ready",
+							formula: { operator: "next", operand: { operator: "variable", variable: "ready" } },
+						},
+					],
+				},
+			};
+
+			const result = validate(doc, { checkSemantics: true });
+
+			const ctlWarning = result.errors.find((e) => e.code === ErrorCode.CTLSemanticsUndefined);
+			assert.ok(!ctlWarning, "Should not have CTL warning for LTL");
+			const ambiguousWarning = result.errors.find((e) => e.code === ErrorCode.CTLOperatorAmbiguous);
+			assert.ok(!ambiguousWarning, "Should not have ambiguous warning for LTL");
+		});
+	});
+
 	describe("hybrid namespace conflicts", () => {
 		it("warns about conflicting state names across components", async () => {
 			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-hybrid-namespace-conflict.bsif.json");
