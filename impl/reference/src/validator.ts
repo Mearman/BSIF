@@ -379,6 +379,69 @@ function validateStateMachine(sm: StateMachine): readonly ValidationError[] {
 					),
 				);
 			}
+
+			// Warn on unreasonably large timing values
+			const MAX_TIMING_VALUE = 1e9;
+			for (const [key, value] of Object.entries(timing)) {
+				if (typeof value === "number" && value > MAX_TIMING_VALUE) {
+					errors.push(
+						createError(
+							ErrorCode.InvalidTimingConstraint,
+							`Transition ${t.from} -> ${t.to}: timing value "${key}" (${value}) exceeds reasonable maximum of ${MAX_TIMING_VALUE}`,
+							{ severity: "warning", path: ["transitions", t.from, "timing", key] },
+						),
+					);
+				}
+			}
+
+			// Warn if period is specified without unit
+			if (timing.period !== undefined && timing.unit === undefined) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidTimingConstraint,
+						`Transition ${t.from} -> ${t.to}: timing has "period" but no "unit" specified`,
+						{ severity: "warning", path: ["transitions", t.from, "timing"] },
+					),
+				);
+			}
+		}
+	}
+
+	// State-level timing validation
+	for (const state of sm.states) {
+		if (state.timing) {
+			const timing = state.timing;
+			if (timing.deadline !== undefined && timing.timeout !== undefined &&
+				timing.deadline < timing.timeout) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidTimingConstraint,
+						`State "${state.name}": deadline (${timing.deadline}) is less than timeout (${timing.timeout})`,
+						{ severity: "warning", path: ["states", state.name, "timing"] },
+					),
+				);
+			}
+			const MAX_TIMING_VALUE = 1e9;
+			for (const [key, value] of Object.entries(timing)) {
+				if (typeof value === "number" && value > MAX_TIMING_VALUE) {
+					errors.push(
+						createError(
+							ErrorCode.InvalidTimingConstraint,
+							`State "${state.name}": timing value "${key}" (${value}) exceeds reasonable maximum of ${MAX_TIMING_VALUE}`,
+							{ severity: "warning", path: ["states", state.name, "timing", key] },
+						),
+					);
+				}
+			}
+			if (timing.period !== undefined && timing.unit === undefined) {
+				errors.push(
+					createError(
+						ErrorCode.InvalidTimingConstraint,
+						`State "${state.name}": timing has "period" but no "unit" specified`,
+						{ severity: "warning", path: ["states", state.name, "timing"] },
+					),
+				);
+			}
 		}
 	}
 
