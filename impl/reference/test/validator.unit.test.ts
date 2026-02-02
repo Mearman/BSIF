@@ -259,4 +259,32 @@ describe("Validator", () => {
 			assert.ok(dupError, "Should have DuplicateName error");
 		});
 	});
+
+	describe("state machine reachability", () => {
+		it("warns about unreachable states", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-unreachable.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const unreachableError = result.errors.find((e) => e.code === ErrorCode.UnreachableState);
+			assert.ok(unreachableError, "Should have UnreachableState warning");
+			assert.strictEqual(unreachableError.severity, "warning");
+			assert.match(unreachableError.message, /orphan/);
+		});
+
+		it("warns about deadlocked states", async () => {
+			const fixturePath = join(import.meta.dirname, "fixtures", "invalid-sm-deadlock.bsif.json");
+			const content = await readFile(fixturePath, "utf-8");
+			const doc = JSON.parse(content);
+
+			const result = validate(doc);
+
+			const deadlockError = result.errors.find((e) => e.code === ErrorCode.DeadlockDetected);
+			assert.ok(deadlockError, "Should have DeadlockDetected warning");
+			assert.strictEqual(deadlockError.severity, "warning");
+			assert.match(deadlockError.message, /stuck/);
+		});
+	});
 });

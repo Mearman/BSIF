@@ -1,0 +1,21 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-unreachable"
+	},
+	"semantics": {
+		"final": ["done"],
+		"initial": "idle",
+		"states": [
+			{ "name": "idle" },
+			{ "name": "active" },
+			{ "name": "done" },
+			{ "name": "orphan" }
+		],
+		"transitions": [
+			{ "from": "idle", "to": "active" },
+			{ "from": "active", "to": "done" }
+		],
+		"type": "state-machine"
+	}
+}

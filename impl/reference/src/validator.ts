@@ -190,6 +190,54 @@ function validateStateMachine(sm: StateMachine): readonly ValidationError[] {
 		}
 	}
 
+	// Reachability analysis: BFS from initial state
+	if (stateNames.has(sm.initial)) {
+		const reachable = new Set<string>();
+		const queue = [sm.initial];
+		reachable.add(sm.initial);
+
+		while (queue.length > 0) {
+			const current = queue.shift();
+			if (current === undefined) break;
+			for (const transition of sm.transitions) {
+				if (transition.from === current && !reachable.has(transition.to)) {
+					reachable.add(transition.to);
+					queue.push(transition.to);
+				}
+			}
+		}
+
+		for (const state of sm.states) {
+			if (!reachable.has(state.name)) {
+				errors.push(
+					createError(
+						ErrorCode.UnreachableState,
+						`State "${state.name}" is not reachable from initial state "${sm.initial}"`,
+						{ severity: "warning", path: ["states", state.name] },
+					),
+				);
+			}
+		}
+	}
+
+	// Deadlock detection: non-final states with no outgoing transitions
+	if (sm.final) {
+		const finalStates = new Set(sm.final);
+		for (const state of sm.states) {
+			if (finalStates.has(state.name)) continue;
+			const hasOutgoing = sm.transitions.some((t) => t.from === state.name);
+			if (!hasOutgoing) {
+				errors.push(
+					createError(
+						ErrorCode.DeadlockDetected,
+						`State "${state.name}" has no outgoing transitions and is not a final state`,
+						{ severity: "warning", path: ["states", state.name] },
+					),
+				);
+			}
+		}
+	}
+
 	return errors;
 }
 

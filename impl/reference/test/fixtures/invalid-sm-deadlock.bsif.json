@@ -1,0 +1,20 @@
+{
+	"metadata": {
+		"bsif_version": "1.0.0",
+		"name": "test-deadlock"
+	},
+	"semantics": {
+		"final": ["done"],
+		"initial": "idle",
+		"states": [
+			{ "name": "idle" },
+			{ "name": "stuck" },
+			{ "name": "done" }
+		],
+		"transitions": [
+			{ "from": "idle", "to": "stuck" },
+			{ "from": "idle", "to": "done" }
+		],
+		"type": "state-machine"
+	}
+}
