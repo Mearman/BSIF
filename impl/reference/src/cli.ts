@@ -138,6 +138,8 @@ function parseCliArgs(args: string[]): ParsedArgs {
 			fields: { type: "string" },
 			"in-place": { type: "boolean", short: "i" },
 			"keep-failed": { type: "boolean" },
+			canonical: { type: "boolean", short: "c" },
+			write: { type: "boolean", short: "w" },
 		},
 		allowPositionals: true,
 	});
@@ -198,6 +200,10 @@ Convert Options:
   --format=<json|yaml>       Output format (convert/format)
   --output=<path>            Output file path
   --output-format=<json|text>  Output format for validate/check/resolve
+
+Format Options:
+  --canonical, -c            Output JCS canonical form (JSON only, deterministic)
+  --write, -w                Write output to file instead of stdout
 
 Lint Options:
   --strict                   Treat lint warnings as errors

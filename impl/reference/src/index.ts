@@ -150,9 +150,8 @@ export {
 export { parseFile, parseFileSync, parseFileString, parseContent, parseContentWithSourceMap, parseFileIncremental, suggestCorrection, buildSourceMap, resolveLocation, findPathOffset } from "./parser.js";
 export type { ParseOptions, ParseLimits, IncrementalParseOptions, SourceMap } from "./parser.js";
 
-export { parseExpression, tryParseExpression, isValidExpression } from "./parser/expression-parser.js";
-export { ExpressionParser, ParseError } from "./parser/expression-parser.js";
-export type { ParseError as ExpressionParseError } from "./parser/expression-parser.js";
+export { parseExpression, tryParseExpression, isValidExpression, ExpressionParser } from "./parser/expression-parser.js";
+export type { ParseError, ParseError as ExpressionParseError } from "./parser/expression-parser.js";
 
 //==============================================================================
 // Validator
@@ -181,6 +180,13 @@ export type { LintOptions } from "./linter.js";
 
 export { generateTests } from "./generators/test-generator.js";
 export type { GenerateOptions, GeneratedTestSuite, TestGenerator } from "./generators/test-generator.js";
+
+//==============================================================================
+// Canonicalizer
+//==============================================================================
+
+export { canonicalize, formatDocument, areEquivalent, computeHash, computeHashSync } from "./canonicalizer.js";
+export type { FormatOptions } from "./canonicalizer.js";
 
 //==============================================================================
 // CLI

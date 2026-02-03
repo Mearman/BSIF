@@ -5,12 +5,14 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseContent } from "../parser.js";
 import { stringify as yamlStringify } from "yaml";
+import { canonicalize, formatDocument } from "../canonicalizer.js";
+import type { FormatOptions } from "../canonicalizer.js";
 
 export async function formatCommand(
 	filePath: string,
 	options: Record<string, unknown>,
 ): Promise<number> {
-	const { write = false } = options;
+	const { write = false, canonical = false } = options;
 	const format = typeof options.format === "string" ? options.format : undefined;
 
 	// Resolve file path
@@ -23,13 +25,28 @@ export async function formatCommand(
 	const inputFormat = detectFormat(filePath);
 
 	// Determine output format: explicit --format, or same as input
+	// JCS canonicalization only outputs JSON
 	const outputFormat = format === "json" || format === "yaml" ? format : inputFormat;
 
 	// Parse and re-format
 	const doc = parseContent(content, filePath);
-	const formatted = outputFormat === "yaml"
-		? yamlStringify(doc).trimEnd()
-		: JSON.stringify(doc, null, 2);
+
+	let formatted: string;
+	if (canonical) {
+		if (outputFormat === "yaml") {
+			console.warn("Warning: JCS canonicalization only supports JSON output. Using JSON.");
+		}
+		formatted = canonicalize(doc);
+	} else {
+		const formatOptions: FormatOptions = {
+			canonical: false,
+			indent: 2,
+		};
+		formatted = formatDocument(doc, formatOptions);
+		if (outputFormat === "yaml") {
+			formatted = yamlStringify(doc).trimEnd();
+		}
+	}
 
 	// Output formatted content
 	if (write) {
